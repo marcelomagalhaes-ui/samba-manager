@@ -1169,7 +1169,7 @@ section[data-testid="stSidebar"] div[data-testid="stIFrame"] {
 # ========================
 # ENGINE
 # ========================
-engine = get_engine()
+engine = get_engine(os.getenv("DATABASE_URL", "sqlite:///data/samba_control.db"))
 
 
 # ========================
@@ -1185,7 +1185,7 @@ def load_kpis():
             )).scalar() or 0
 
             total_volume = conn.execute(sqlalchemy.text(
-                "SELECT COALESCE(SUM(MIN(volume,500000)),0) FROM deals "
+                "SELECT COALESCE(SUM(LEAST(volume,500000)),0) FROM deals "
                 "WHERE status='ativo' AND volume_unit='MT' AND volume > 0"
             )).scalar() or 0
 
@@ -1291,11 +1291,11 @@ def load_deals_recentes():
                 commodity     AS "Commodity",
                 UPPER(direcao) AS "Dir",
                 CASE WHEN price IS NOT NULL AND price > 0
-                     THEN PRINTF('%.2f %s', price, COALESCE(currency,'USD'))
+                     THEN CONCAT(ROUND(price::numeric,2)::text, ' ', COALESCE(currency,'USD'))
                      ELSE 'A Definir' END AS "Preco",
                 COALESCE(stage, 'Lead Capturado') AS "Stage",
                 COALESCE(source_group, COALESCE(source_sender, '-')) AS "Grupo",
-                SUBSTR(created_at, 1, 10) AS "Data"
+                LEFT(created_at::text, 10) AS "Data"
             FROM ranked
             WHERE rn = 1
             ORDER BY created_at DESC
@@ -1339,7 +1339,7 @@ def load_pipeline_por_stage():
                 commodity  AS "Commodity",
                 UPPER(COALESCE(direcao,'?')) AS "Dir",
                 CASE WHEN price IS NOT NULL
-                     THEN PRINTF('%.2f %s', price, COALESCE(currency,'USD'))
+                     THEN CONCAT(ROUND(price::numeric,2)::text, ' ', COALESCE(currency,'USD'))
                      ELSE 'Preco a Definir' END AS "Preco",
                 COALESCE(source_group, '-') AS "Cliente",
                 COALESCE(stage, 'Lead Capturado') AS "Stage",
