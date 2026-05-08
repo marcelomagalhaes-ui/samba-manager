@@ -349,18 +349,22 @@ class PendingApproval(Base):
 # CONFIGURAÇÃO DA ENGINE
 # ==============================================================
 
-def get_engine(url: str = "sqlite:///data/samba_control.db"):
-    return create_engine(url, echo=False)
+import os as _os
+
+_DEFAULT_DB_URL = _os.getenv("DATABASE_URL", "sqlite:///data/samba_control.db")
 
 
-def create_tables(url: str = "sqlite:///data/samba_control.db"):
+def get_engine(url: str = None):
+    return create_engine(url or _DEFAULT_DB_URL, echo=False)
+
+
+def create_tables(url: str = None):
     engine = get_engine(url)
     Base.metadata.create_all(engine)
-    print("✓ Todas as tabelas (incluindo RAG e Dados de Mercado) criadas com sucesso.")
     return engine
 
 
-def get_session(engine=None, url: str = "sqlite:///data/samba_control.db"):
+def get_session(engine=None, url: str = None):
     if engine is None:
         engine = get_engine(url)
     Session = sessionmaker(bind=engine)

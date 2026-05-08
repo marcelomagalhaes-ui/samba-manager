@@ -258,31 +258,42 @@ def update_all_market_data():
     session = get_session()
     
     try:
-        PhysicalMarketScraper.scrape_all_markets(session)
+        try:
+            PhysicalMarketScraper.scrape_all_markets(session)
+        except Exception as e_scrape:
+            session.rollback()
+            logger.warning(f"[ORCHESTRATOR] Scraper fisico falhou (ignorado): {e_scrape}")
+
         bolsas = ExternalDataService.get_bolsas_usd_mt()
-        
+
         snapshot = MarketSnapshot(
             timestamp=datetime.utcnow(),
-            usd_brl=ExternalDataService.get_usd_brl(),
-            cbot_soy_usd_mt=round(bolsas["cbot_soy_usd_mt"], 2),
-            cbot_corn_usd_mt=round(bolsas["cbot_corn_usd_mt"], 2),
-            ice_sugar_usd_mt=round(bolsas["ice_sugar_usd_mt"], 2),
-            diesel_s10=round(ExternalDataService.get_diesel_price(session), 2),
-            bunker_vlsfo=round(ExternalDataService.get_bunker_proxy_price(session), 2),
-            daily_hire=round(ExternalDataService.get_daily_hire_panamax(session), 2)
+            usd_brl=float(ExternalDataService.get_usd_brl()),
+            cbot_soy_usd_mt=float(round(bolsas["cbot_soy_usd_mt"], 2)),
+            cbot_corn_usd_mt=float(round(bolsas["cbot_corn_usd_mt"], 2)),
+            ice_sugar_usd_mt=float(round(bolsas["ice_sugar_usd_mt"], 2)),
+            diesel_s10=float(round(ExternalDataService.get_diesel_price(session), 2)),
+            bunker_vlsfo=float(round(ExternalDataService.get_bunker_proxy_price(session), 2)),
+            daily_hire=float(round(ExternalDataService.get_daily_hire_panamax(session), 2)),
         )
         session.add(snapshot)
-        
+
         agora = datetime.utcnow()
-        for comm, price in [("SOY", snapshot.cbot_soy_usd_mt), ("CORN", snapshot.cbot_corn_usd_mt), ("SUGAR", snapshot.ice_sugar_usd_mt)]:
+        for comm, price in [
+            ("SOY",   snapshot.cbot_soy_usd_mt),
+            ("CORN",  snapshot.cbot_corn_usd_mt),
+            ("SUGAR", snapshot.ice_sugar_usd_mt),
+        ]:
             session.add(BolsasBase(
-                commodity=comm, contract="LIVE", price_raw=price, unit_original="USD/MT",
-                conversion_factor=1, price_usd_mt=price, timestamp=agora, source_flag="YAHOO_LIVE"
+                commodity=comm, contract="LIVE",
+                price_raw=price, unit_original="USD/MT",
+                conversion_factor=1.0, price_usd_mt=price,
+                timestamp=agora, source_flag="YAHOO_LIVE",
             ))
-            
+
         session.commit()
         logger.info("[ORCHESTRATOR] Sincronizacao de snapshots salva com sucesso.")
-        
+
     except Exception as e:
         session.rollback()
         logger.error(f"[ORCHESTRATOR] Erro critico: {e}")
