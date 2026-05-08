@@ -2134,6 +2134,22 @@ with c5:
 st.markdown("<div style='margin-bottom:4px'></div>", unsafe_allow_html=True)
 
 # ========================
+# BOTÃO ATUALIZAR MERCADO
+# ========================
+_mkt_col, _mkt_spacer = st.columns([3, 7])
+with _mkt_col:
+    _mkt_refresh = st.button("⟳ Atualizar Mercado", key="mkt_update_btn", help="Busca dados atualizados de Bolsas (CBOT/ICE), câmbio e praças físicas")
+if _mkt_refresh:
+    try:
+        from services.market_data import update_all_market_data
+        with st.spinner("Atualizando dados de mercado..."):
+            update_all_market_data()
+        st.success("Dados de mercado atualizados com sucesso!")
+        st.rerun()
+    except Exception as _mkt_err:
+        st.error(f"Erro ao atualizar mercado: {_mkt_err}")
+
+# ========================
 # GEOPOLITICAL NEWS FEED
 # ========================
 _IMPACT_CLS   = {"critica": "critica", "alta": "alta", "media": "media"}
