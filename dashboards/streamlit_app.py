@@ -2144,7 +2144,9 @@ if _mkt_refresh:
         from services.market_data import update_all_market_data
         with st.spinner("Atualizando dados de mercado..."):
             update_all_market_data()
-        st.success("Dados de mercado atualizados com sucesso!")
+        load_market.clear()
+        load_extended_market.clear()
+        st.success("Dados de mercado atualizados!")
         st.rerun()
     except Exception as _mkt_err:
         st.error(f"Erro ao atualizar mercado: {_mkt_err}")
