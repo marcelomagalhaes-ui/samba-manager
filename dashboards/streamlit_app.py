@@ -1184,7 +1184,13 @@ section[data-testid="stSidebar"] div[data-testid="stIFrame"] {
 # ========================
 # ENGINE
 # ========================
-engine = get_engine(os.getenv("DATABASE_URL", "sqlite:///data/samba_control.db"))
+_db_url = os.getenv("DATABASE_URL")
+if not _db_url:
+    try:
+        _db_url = st.secrets.get("DATABASE_URL")
+    except Exception:
+        pass
+engine = get_engine(_db_url)  # get_engine(None) usa st.secrets internamente como fallback
 
 
 # ========================
