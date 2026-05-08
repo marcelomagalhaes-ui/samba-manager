@@ -2363,6 +2363,15 @@ with abas[0]:
     with st.expander("📊 Mercado Interno (Preços Físicos BRL/Saca)", expanded=False):
         st.caption("Referência de praças físicas brasileiras — mercado doméstico. Não reflete preços de exportação.")
 
+        # Diagnóstico: conta total de rows na tabela
+        try:
+            with engine.connect() as _dc:
+                _total = _dc.execute(sqlalchemy.text("SELECT COUNT(*) FROM tb_preco_fisico_raw")).scalar()
+                _url_tipo = str(engine.url).split("@")[-1][:30] if "@" in str(engine.url) else str(engine.url)[:30]
+                st.caption(f"🔌 {_url_tipo} | {_total} registros físicos")
+        except Exception as _de:
+            st.caption(f"🔌 Erro DB: {_de}")
+
         def _query_pracas(prod: str) -> list:
             """Busca praças direto pelo engine principal do app (já conectado ao Supabase)."""
             try:
