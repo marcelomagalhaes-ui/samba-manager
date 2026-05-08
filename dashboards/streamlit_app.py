@@ -22,6 +22,15 @@ try:
 except Exception:
     pass
 
+# Injeta secrets do Streamlit Cloud no os.environ para que get_engine() e
+# qualquer os.getenv() downstream enxerguem DATABASE_URL, GEMINI_API_KEY, etc.
+try:
+    for _sk, _sv in st.secrets.items():
+        if isinstance(_sv, str) and _sk not in os.environ:
+            os.environ[_sk] = _sv
+except Exception:
+    pass
+
 from models.database import get_engine, get_session, create_tables
 from services.market_data import market_data, PhysicalMarketScraper
 
