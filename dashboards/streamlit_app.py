@@ -2357,20 +2357,22 @@ with abas[0]:
     with st.expander("📊 Mercado Interno (Preços Físicos BRL/Saca)", expanded=False):
         st.caption("Referência de praças físicas brasileiras — mercado doméstico. Não reflete preços de exportação.")
 
-        _scraper_ran_geral = False
+        # Debug: mostrar qual DB está sendo usado (remove após confirmar)
+        try:
+            _db_url_debug = os.getenv("DATABASE_URL", "")
+            if not _db_url_debug:
+                try:
+                    _db_url_debug = st.secrets.get("DATABASE_URL", "")
+                except Exception:
+                    _db_url_debug = ""
+            _db_tipo = "Supabase" if "supabase" in _db_url_debug else ("SQLite" if _db_url_debug else "NÃO ENCONTRADO")
+            st.caption(f"🔌 DB: {_db_tipo}")
+        except Exception:
+            pass
+
         _pracas_data = {}
         for _prod in ["SOY", "CORN", "SUGAR"]:
             _df_p = load_pracas(_prod)
-            if _df_p.empty and not _scraper_ran_geral:
-                try:
-                    _db = get_session()
-                    PhysicalMarketScraper.scrape_all_markets(_db)
-                    _db.close()
-                    load_pracas.clear()
-                    _df_p = load_pracas(_prod)
-                    _scraper_ran_geral = True
-                except Exception:
-                    pass
             _pracas_data[_prod] = _df_p
 
         _prac_cols = st.columns(3)
