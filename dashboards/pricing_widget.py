@@ -518,7 +518,6 @@ def _get_snapshot() -> dict:
     try:
         eng = get_engine()
         with eng.connect() as conn:
-            # Tenta buscar daily_hire (BDI × 12); ignora se coluna não existir
             try:
                 row = conn.execute(sqlalchemy.text(
                     "SELECT usd_brl, cbot_soy_usd_mt, cbot_corn_usd_mt, "
@@ -526,7 +525,7 @@ def _get_snapshot() -> dict:
                     "FROM market_snapshots ORDER BY timestamp DESC LIMIT 1"
                 )).fetchone()
                 if row:
-                    return {
+                    base = {
                         "usd_brl":          row[0] or 5.75,
                         "cbot_soy_usd_mt":  row[1] or 0.0,
                         "cbot_corn_usd_mt": row[2] or 0.0,
@@ -550,9 +549,25 @@ def _get_snapshot() -> dict:
                         "bunker_vlsfo":     row[4] or 550.0,
                         "ts":               str(row[5])[:16],
                     })
-                    return base
     except Exception:
         pass
+
+    # Fallback direto no yfinance se DB não tem dados de bolsas
+    if base["cbot_soy_usd_mt"] == 0.0:
+        try:
+            import yfinance as _yf
+            _soy  = float(_yf.Ticker("ZS=F").history(period="2d")["Close"].iloc[-1])
+            _corn = float(_yf.Ticker("ZC=F").history(period="2d")["Close"].iloc[-1])
+            _sug  = float(_yf.Ticker("SB=F").history(period="2d")["Close"].iloc[-1])
+            _fx   = float(_yf.Ticker("USDBRL=X").history(period="2d")["Close"].iloc[-1])
+            base["cbot_soy_usd_mt"]  = round((_soy  / 100) * 36.7437, 2)
+            base["cbot_corn_usd_mt"] = round((_corn / 100) * 39.3680, 2)
+            base["ice_sugar_usd_mt"] = round(_sug  * 22.0462, 2)
+            base["usd_brl"]          = round(_fx, 4)
+            base["ts"]               = "ao vivo"
+        except Exception:
+            pass
+
     return base
 
 

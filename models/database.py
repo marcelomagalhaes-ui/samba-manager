@@ -351,11 +351,9 @@ class PendingApproval(Base):
 
 import os as _os
 
-_DEFAULT_DB_URL = _os.getenv("DATABASE_URL", "sqlite:///data/samba_control.db")
-
-
 def get_engine(url: str = None):
-    return create_engine(url or _DEFAULT_DB_URL, echo=False)
+    effective = url or _os.getenv("DATABASE_URL", "sqlite:///data/samba_control.db")
+    return create_engine(effective, echo=False)
 
 
 def create_tables(url: str = None):

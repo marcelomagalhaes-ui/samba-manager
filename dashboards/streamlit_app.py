@@ -22,12 +22,17 @@ try:
 except Exception:
     pass
 
-# Injeta secrets do Streamlit Cloud no os.environ para que get_engine() e
-# qualquer os.getenv() downstream enxerguem DATABASE_URL, GEMINI_API_KEY, etc.
+# Injeta secrets do Streamlit Cloud no os.environ
 try:
-    for _sk, _sv in st.secrets.items():
-        if isinstance(_sv, str) and _sk not in os.environ:
-            os.environ[_sk] = _sv
+    _secrets_keys = ["DATABASE_URL", "GEMINI_API_KEY", "DASH_PASSWORD",
+                     "GOOGLE_CREDENTIALS_JSON", "GOOGLE_TOKEN_JSON"]
+    for _sk in _secrets_keys:
+        try:
+            _sv = st.secrets[_sk]
+            if isinstance(_sv, str):
+                os.environ[_sk] = _sv
+        except Exception:
+            pass
 except Exception:
     pass
 
@@ -1427,7 +1432,28 @@ def load_book():
 def load_market():
     """Market overview cacheado (SOY, CORN, SUGAR, USD/BRL — para KPI cards)."""
     try:
-        return market_data.get_market_overview()
+        result = market_data.get_market_overview()
+        # Se DB retornou zeros, busca ao vivo no yfinance
+        if result.get("SOY_CBOT (USD/MT)", {}).get("valor", 0) == 0:
+            raise ValueError("zero values from DB")
+        return result
+    except Exception:
+        pass
+    try:
+        import yfinance as _yf
+        _soy  = float(_yf.Ticker("ZS=F").history(period="2d")["Close"].iloc[-1])
+        _corn = float(_yf.Ticker("ZC=F").history(period="2d")["Close"].iloc[-1])
+        _sug  = float(_yf.Ticker("SB=F").history(period="2d")["Close"].iloc[-1])
+        _fx   = float(_yf.Ticker("USDBRL=X").history(period="2d")["Close"].iloc[-1])
+        soy_mt  = round((_soy  / 100) * 36.7437, 2)
+        corn_mt = round((_corn / 100) * 39.3680, 2)
+        sug_mt  = round(_sug  * 22.0462, 2)
+        return {
+            "SOY_CBOT (USD/MT)":   {"valor": soy_mt,  "variacao": 0.0},
+            "CORN_CBOT (USD/MT)":  {"valor": corn_mt, "variacao": 0.0},
+            "SUGAR_ICE (USD/MT)":  {"valor": sug_mt,  "variacao": 0.0},
+            "USD/BRL":             {"valor": round(_fx, 4), "variacao": 0.0},
+        }
     except Exception:
         return {}
 
