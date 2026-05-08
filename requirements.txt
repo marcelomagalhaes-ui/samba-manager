@@ -5,6 +5,7 @@ pydantic==2.11.3
 
 # Database
 sqlalchemy==2.0.40
+psycopg2-binary==2.9.10
 
 # AI
 anthropic==0.52.0
