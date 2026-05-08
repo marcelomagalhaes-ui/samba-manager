@@ -2357,23 +2357,34 @@ with abas[0]:
     with st.expander("📊 Mercado Interno (Preços Físicos BRL/Saca)", expanded=False):
         st.caption("Referência de praças físicas brasileiras — mercado doméstico. Não reflete preços de exportação.")
 
-        # Debug: mostrar qual DB está sendo usado (remove após confirmar)
-        try:
-            _db_url_debug = os.getenv("DATABASE_URL", "")
-            if not _db_url_debug:
-                try:
-                    _db_url_debug = st.secrets.get("DATABASE_URL", "")
-                except Exception:
-                    _db_url_debug = ""
-            _db_tipo = "Supabase" if "supabase" in _db_url_debug else ("SQLite" if _db_url_debug else "NÃO ENCONTRADO")
-            st.caption(f"🔌 DB: {_db_tipo}")
-        except Exception:
-            pass
+        def _query_pracas(prod: str) -> list:
+            """Busca praças direto pelo engine principal do app (já conectado ao Supabase)."""
+            try:
+                with engine.connect() as _c:
+                    rows = _c.execute(sqlalchemy.text("""
+                        SELECT DISTINCT ON (cidade, uf)
+                            cidade || '/' || uf AS praca,
+                            CASE WHEN produto='SUGAR'
+                                THEN ROUND((preco_brl_ton*50/1000)::numeric,2)
+                                ELSE ROUND((preco_brl_ton*60/1000)::numeric,2)
+                            END AS preco_saca,
+                            ROUND(preco_brl_ton::numeric,2) AS preco_ton,
+                            fonte,
+                            LEFT(timestamp::text,10) AS data
+                        FROM tb_preco_fisico_raw
+                        WHERE UPPER(produto)=UPPER(:p)
+                        ORDER BY cidade, uf, timestamp DESC
+                        LIMIT 20
+                    """), {"p": prod}).fetchall()
+                return rows
+            except Exception as _e:
+                return []
 
-        _pracas_data = {}
-        for _prod in ["SOY", "CORN", "SUGAR"]:
-            _df_p = load_pracas(_prod)
-            _pracas_data[_prod] = _df_p
+        _pracas_data = {
+            "SOY":   _query_pracas("SOY"),
+            "CORN":  _query_pracas("CORN"),
+            "SUGAR": _query_pracas("SUGAR"),
+        }
 
         _prac_cols = st.columns(3)
         for _col, _prod, _label in [
@@ -2383,27 +2394,22 @@ with abas[0]:
         ]:
             with _col:
                 st.markdown(f'<div style="font-size:11px;letter-spacing:2px;color:var(--samba-gold);font-weight:800;margin-bottom:8px">{_label}</div>', unsafe_allow_html=True)
-                _df_p = _pracas_data[_prod]
-                if _df_p.empty:
-                    st.caption(f"Sem dados.")
+                _rows_p = _pracas_data[_prod]
+                if not _rows_p:
+                    st.caption("Sem dados.")
                 else:
-                    _df_p = _df_p.copy()
-                    for _dc in ["FONTE", "Fonte", "SOURCE", "source"]:
-                        if _dc in _df_p.columns:
-                            _df_p = _df_p.drop(columns=[_dc])
-                    if "PRECO (TON)" in _df_p.columns and _cambio > 0:
-                        _df_p["USD/Ton"] = (_df_p["PRECO (TON)"] / _cambio).round(2)
-                    # Renderiza como mini pills por praca
-                    _rows_p = _df_p.head(6).to_dict("records")
-                    for _rp in _rows_p:
-                        _nm  = str(_rp.get("PRACA FISICA", _rp.get("Praca", "—")))[:22]
-                        _rs  = _rp.get("PRECO (SACA)", _rp.get("R$/Saca", 0)) or 0
-                        _usd = _rp.get("USD/Ton", 0) or 0
+                    for _rp in _rows_p[:8]:
+                        # row: (praca, preco_saca, preco_ton, fonte, data)
+                        _nm  = str(_rp[0])[:24]
+                        _rs  = float(_rp[1] or 0)
+                        _ton = float(_rp[2] or 0)
+                        _usd = round(_ton / _cambio, 0) if _cambio > 0 else 0
+                        _dt  = str(_rp[4] or "")[:10]
                         st.markdown(
                             f'<div class="praca-pill">'
                             f'<span class="praca-name">{_nm}</span>'
-                            f'<span class="praca-rs">R$ {float(_rs):.0f}/sc</span>'
-                            f'<span class="praca-usd">≈ USD {float(_usd):.0f}/t</span>'
+                            f'<span class="praca-rs">R$ {_rs:.0f}/sc</span>'
+                            f'<span class="praca-usd">≈ USD {_usd:.0f}/t</span>'
                             f'</div>',
                             unsafe_allow_html=True,
                         )
