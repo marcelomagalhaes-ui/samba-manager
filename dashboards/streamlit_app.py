@@ -3,6 +3,7 @@ dashboards/streamlit_app.py
 ===========================
 Painel Gerencial da Samba Export - V3 INSTITUCIONAL
 """
+import os
 import sys
 import json
 import datetime
