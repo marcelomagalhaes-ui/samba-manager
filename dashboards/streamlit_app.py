@@ -47,7 +47,12 @@ import hashlib as _hashlib
 import os as _os
 
 _ALLOWED_DOMAINS = {"sambaexport.com.br"}
-_ALLOWED_EMAILS  = {"msmaganog@gmail.com"}
+_ALLOWED_EMAILS  = {
+    "msmaganog@gmail.com",
+    "lbd@sambaexport.com.br",
+    "nmd@sambaexport.com.br",
+    "marcelo.magalhaes@sambaexport.com.br",
+}
 _DASH_PWD_HASH   = _hashlib.sha256(
     _os.getenv("DASH_PASSWORD", "samba@2026").encode()
 ).hexdigest()
