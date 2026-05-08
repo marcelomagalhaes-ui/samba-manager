@@ -26,91 +26,183 @@ logger = logging.getLogger(__name__)
 # CONFIGURACOES DO SCRAPER (MERCADO FISICO)
 # ==========================================================
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
-}
-
-SOURCES = {
-    "SOY": [
-        {"url": "https://www.noticiasagricolas.com.br/cotacoes/soja/soja-mercado-fisico-sindicatos-e-cooperativas", "fonte": "Noticias_Agricolas"}
-    ],
-    "CORN": [
-        {"url": "https://www.noticiasagricolas.com.br/cotacoes/milho/milho-mercado-fisico-sindicatos-e-cooperativas", "fonte": "Noticias_Agricolas"}
-    ],
-    "SUGAR": [
-        {"url": "https://www.noticiasagricolas.com.br/cotacoes/acucar/acucar-cristal-mercado-fisico", "fonte": "Noticias_Agricolas"}
-    ]
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "pt-BR,pt;q=0.9",
 }
 
 # Limites matematicos aceitaveis (BRL por TONELADA) para evitar lixo HTML
 SANITY_BOUNDS_BRL_TON = {
     "SOY":   (1000.0, 4500.0),
     "CORN":  (500.0,  2500.0),
-    "SUGAR": (1500.0, 5000.0)
+    "SUGAR": (1500.0, 5000.0),
 }
 
 class PhysicalMarketScraper:
-    @staticmethod
-    def _parse_price(price_str: str) -> float:
-        clean_str = re.sub(r'[^0-9,]', '', price_str)
-        if not clean_str: return 0.0
-        return float(clean_str.replace(',', '.'))
 
     @staticmethod
-    def _parse_location(loc_str: str):
-        match = re.search(r'([A-Za-zÀ-ÖØ-öø-ÿ\s\-]+)/([A-Z]{2})', loc_str.strip())
-        if match: return match.group(1).strip(), match.group(2).strip()
-        match_fallback = re.search(r'([A-Za-zÀ-ÖØ-öø-ÿ\s\-]+)[/\-\s]+([A-Z]{2})', loc_str.strip())
-        if match_fallback: return match_fallback.group(1).strip(), match_fallback.group(2).strip()
+    def _parse_price(s: str) -> float:
+        clean = re.sub(r'[^0-9,\.]', '', s.strip())
+        if not clean:
+            return 0.0
+        # Formato brasileiro: 120,50 ou 1.200,50
+        if ',' in clean and '.' in clean:
+            clean = clean.replace('.', '').replace(',', '.')
+        elif ',' in clean:
+            clean = clean.replace(',', '.')
+        try:
+            return float(clean)
+        except Exception:
+            return 0.0
+
+    @staticmethod
+    def _parse_location(s: str):
+        s = s.strip()
+        m = re.search(r'([A-Za-zÀ-ÖØ-öø-ÿ\s\-\.]+)[/\-]\s*([A-Z]{2})\b', s)
+        if m:
+            return m.group(1).strip(), m.group(2).strip()
         return None, None
 
     @classmethod
+    def _save_if_new(cls, db, produto: str, cidade: str, uf: str,
+                     preco_ton: float, fonte: str, limite_tempo) -> bool:
+        bounds = SANITY_BOUNDS_BRL_TON.get(produto, (10.0, 100000.0))
+        if not (bounds[0] <= preco_ton <= bounds[1]):
+            return False
+        existe = db.query(PrecoFisicoRaw).filter(
+            PrecoFisicoRaw.produto == produto,
+            PrecoFisicoRaw.uf == uf,
+            PrecoFisicoRaw.cidade == cidade,
+            PrecoFisicoRaw.timestamp >= limite_tempo,
+        ).first()
+        if not existe:
+            db.add(PrecoFisicoRaw(
+                produto=produto, uf=uf, cidade=cidade,
+                preco_brl_ton=round(preco_ton, 2),
+                fonte=fonte, timestamp=datetime.utcnow(),
+            ))
+            return True
+        return False
+
+    # ── FONTE 1: Agrolink ────────────────────────────────────────────
+    _AGROLINK_URLS = {
+        "SOY":   "https://www.agrolink.com.br/cotacoes/graos?cultura=soja",
+        "CORN":  "https://www.agrolink.com.br/cotacoes/graos?cultura=milho",
+        "SUGAR": "https://www.agrolink.com.br/cotacoes/outros?cultura=acucar",
+    }
+    _AGROLINK_KG = {"SOY": 60, "CORN": 60, "SUGAR": 50}
+
+    @classmethod
+    def _scrape_agrolink(cls, db, produto: str, limite_tempo) -> int:
+        url = cls._AGROLINK_URLS.get(produto)
+        if not url:
+            return 0
+        resp = requests.get(url, headers=HEADERS, timeout=15)
+        if resp.status_code != 200:
+            return 0
+        soup = BeautifulSoup(resp.content, "html.parser")
+        kg = cls._AGROLINK_KG[produto]
+        count = 0
+        for row in soup.find_all("tr"):
+            cols = row.find_all(["td", "th"])
+            if len(cols) < 3:
+                continue
+            loc_text = cols[0].get_text(strip=True)
+            preco_text = cols[2].get_text(strip=True)   # coluna "Preço"
+            cidade, uf = cls._parse_location(loc_text)
+            preco_saca = cls._parse_price(preco_text)
+            if not (cidade and uf and preco_saca > 0):
+                continue
+            preco_ton = preco_saca * 1000 / kg
+            if cls._save_if_new(db, produto, cidade, uf, preco_ton, "Agrolink", limite_tempo):
+                count += 1
+        return count
+
+    # ── FONTE 2: CEPEA/ESALQ ─────────────────────────────────────────
+    _CEPEA_URLS = {
+        "SOY":   ("https://cepea.esalq.usp.br/br/indicador/soja.aspx",   "Paranaguá", "PR", 60),
+        "CORN":  ("https://cepea.esalq.usp.br/br/indicador/milho.aspx",  "Campinas",  "SP", 60),
+        "SUGAR": ("https://cepea.esalq.usp.br/br/indicador/acucar.aspx", "São Paulo", "SP", 50),
+    }
+
+    @classmethod
+    def _scrape_cepea(cls, db, produto: str, limite_tempo) -> int:
+        cfg = cls._CEPEA_URLS.get(produto)
+        if not cfg:
+            return 0
+        url, cidade, uf, kg = cfg
+        resp = requests.get(url, headers=HEADERS, timeout=15)
+        if resp.status_code != 200:
+            return 0
+        soup = BeautifulSoup(resp.content, "html.parser")
+        # CEPEA tem tabela com id "imagenet-indicador1" ou classe "tableBig"
+        for tbl in soup.find_all("table"):
+            for row in tbl.find_all("tr"):
+                cols = row.find_all("td")
+                if len(cols) < 2:
+                    continue
+                for col in cols[1:3]:   # colunas "À vista" e "À prazo"
+                    txt = col.get_text(strip=True)
+                    preco_saca = cls._parse_price(txt)
+                    if preco_saca > 0:
+                        preco_ton = preco_saca * 1000 / kg
+                        if cls._save_if_new(db, produto, cidade, uf, preco_ton, "CEPEA", limite_tempo):
+                            return 1
+        return 0
+
+    # ── FONTE 3: NoticiasAgricolas ───────────────────────────────────
+    _NOTICIAS_URLS = {
+        "SOY":   "https://www.noticiasagricolas.com.br/cotacoes/soja/soja-mercado-fisico-sindicatos-e-cooperativas",
+        "CORN":  "https://www.noticiasagricolas.com.br/cotacoes/milho/milho-mercado-fisico-sindicatos-e-cooperativas",
+        "SUGAR": "https://www.noticiasagricolas.com.br/cotacoes/acucar/acucar-cristal-mercado-fisico",
+    }
+
+    @classmethod
+    def _scrape_noticias(cls, db, produto: str, limite_tempo) -> int:
+        url = cls._NOTICIAS_URLS.get(produto)
+        if not url:
+            return 0
+        resp = requests.get(url, headers=HEADERS, timeout=15)
+        if resp.status_code != 200:
+            return 0
+        soup = BeautifulSoup(resp.content, "html.parser")
+        kg = 50 if produto == "SUGAR" else 60
+        count = 0
+        for row in soup.find_all("tr"):
+            cols = row.find_all(["td", "th"])
+            if len(cols) < 2:
+                continue
+            cidade, uf = cls._parse_location(cols[0].get_text(strip=True))
+            preco_saca = cls._parse_price(cols[1].get_text(strip=True))
+            if not (cidade and uf and preco_saca > 0):
+                continue
+            preco_ton = preco_saca * 1000 / kg
+            if cls._save_if_new(db, produto, cidade, uf, preco_ton, "NoticiasAgricolas", limite_tempo):
+                count += 1
+        return count
+
+    # ── ORQUESTRADOR ─────────────────────────────────────────────────
+    @classmethod
     def scrape_all_markets(cls, db):
-        logger.info("[SCRAPER] Iniciando varredura de Mercados Fisicos...")
-        registros_inseridos = 0
+        logger.info("[SCRAPER] Iniciando varredura com cadeia de fallback...")
         limite_tempo = datetime.utcnow() - timedelta(hours=6)
-
-        for produto, configs in SOURCES.items():
-            for config in configs:
+        total = 0
+        for produto in ["SOY", "CORN", "SUGAR"]:
+            for nome, metodo in [
+                ("Agrolink",          cls._scrape_agrolink),
+                ("CEPEA",             cls._scrape_cepea),
+                ("NoticiasAgricolas", cls._scrape_noticias),
+            ]:
                 try:
-                    resp = requests.get(config["url"], headers=HEADERS, timeout=15)
-                    if resp.status_code != 200: continue
-                    soup = BeautifulSoup(resp.content, "html.parser")
-                    bounds = SANITY_BOUNDS_BRL_TON.get(produto, (10.0, 100000.0))
-
-                    for row in soup.find_all("tr"):
-                        cols = row.find_all(["td", "th"])
-                        if len(cols) < 2: continue
-                        
-                        cidade, uf = cls._parse_location(cols[0].get_text(strip=True))
-                        preco_saca = cls._parse_price(cols[1].get_text(strip=True))
-
-                        if cidade and uf and preco_saca > 0:
-                            # 50kg para acucar, 60kg para graos
-                            mult = (1000 / 50) if produto == "SUGAR" else (1000 / 60)
-                            preco_ton = preco_saca * mult
-
-                            # Sanity Check para evitar salvar variacoes percentuais ou comissoes
-                            if bounds[0] <= preco_ton <= bounds[1]:
-                                ja_existe = db.query(PrecoFisicoRaw).filter(
-                                    PrecoFisicoRaw.produto == produto,
-                                    PrecoFisicoRaw.uf == uf,
-                                    PrecoFisicoRaw.cidade == cidade,
-                                    PrecoFisicoRaw.timestamp >= limite_tempo
-                                ).first()
-
-                                if not ja_existe:
-                                    db.add(PrecoFisicoRaw(
-                                        produto=produto, uf=uf, cidade=cidade,
-                                        preco_brl_ton=round(preco_ton, 2),
-                                        fonte=config["fonte"], timestamp=datetime.utcnow()
-                                    ))
-                                    registros_inseridos += 1
+                    n = metodo(db, produto, limite_tempo)
+                    logger.info(f"[SCRAPER] {nome}/{produto}: {n} registros")
+                    total += n
+                    if n > 0:
+                        break   # fonte funcionou, próximo produto
                 except Exception as e:
-                    logger.error(f"[SCRAPER] Erro ao extrair {produto}: {e}")
-
+                    logger.warning(f"[SCRAPER] {nome}/{produto} falhou: {e}")
         db.commit()
-        logger.info(f"[SCRAPER] Concluido. {registros_inseridos} registros processados.")
+        logger.info(f"[SCRAPER] Total: {total} registros inseridos.")
 
 # ==========================================================
 # EXTERNAL APIs & FALLBACKS
@@ -370,21 +462,24 @@ class MarketDataFacade:
     def get_pracas_fisicas(self, produto: str):
         engine = get_engine()
         try:
-            df = pd.read_sql(f"""
-                SELECT 
+            import sqlalchemy
+            # Busca as mais recentes por praça (1 linha por cidade/uf)
+            sql = """
+                SELECT DISTINCT ON (cidade, uf)
                     cidade || '/' || uf AS "PRACA FISICA",
-                    CASE 
-                        WHEN produto = 'SUGAR' THEN preco_brl_ton * 50 / 1000
-                        ELSE preco_brl_ton * 60 / 1000
+                    CASE
+                        WHEN produto = 'SUGAR' THEN ROUND((preco_brl_ton * 50 / 1000)::numeric, 2)
+                        ELSE ROUND((preco_brl_ton * 60 / 1000)::numeric, 2)
                     END AS "PRECO (SACA)",
-                    preco_brl_ton AS "PRECO (TON)",
+                    ROUND(preco_brl_ton::numeric, 2) AS "PRECO (TON)",
                     fonte AS "FONTE",
-                    SUBSTR(timestamp, 1, 10) AS "DATA"
+                    LEFT(timestamp::text, 10) AS "DATA"
                 FROM tb_preco_fisico_raw
-                WHERE produto = '{produto}'
-                ORDER BY timestamp DESC
-                LIMIT 15
-            """, engine)
+                WHERE UPPER(produto) = UPPER(:prod)
+                ORDER BY cidade, uf, timestamp DESC
+                LIMIT 20
+            """
+            df = pd.read_sql(sqlalchemy.text(sql), engine, params={"prod": produto})
             return df
         except Exception as e:
             logger.error(f"[FACADE] Erro ao buscar pracas: {e}")

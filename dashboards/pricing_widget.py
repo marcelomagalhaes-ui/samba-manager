@@ -571,7 +571,7 @@ def _get_snapshot() -> dict:
     return base
 
 
-_MAX_PRECO_FISICO_DIAS = 3   # rejeita preço físico com mais de 3 dias
+_MAX_PRECO_FISICO_DIAS = 30   # aceita dados históricos até 30 dias (fallback Supabase)
 
 def _get_preco_fisico(produto: str, uf: str) -> dict | None:
     try:
