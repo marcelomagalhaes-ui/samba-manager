@@ -21,8 +21,16 @@ try:
 except Exception:
     pass
 
-from models.database import get_engine, get_session
+from models.database import get_engine, get_session, create_tables
 from services.market_data import market_data, PhysicalMarketScraper
+
+# Garante que o banco existe (necessário no Streamlit Cloud onde o SQLite começa vazio)
+try:
+    _db_url = os.getenv("DATABASE_URL", "sqlite:///data/samba_control.db")
+    Path("data").mkdir(exist_ok=True)
+    create_tables(_db_url)
+except Exception:
+    pass
 
 # CONFIG
 st.set_page_config(
@@ -3804,11 +3812,18 @@ with abas[10]:
         """Carrega estado do canal Drive Watch e page token."""
         from models.database import DriveSyncState, get_session
         from datetime import datetime, timezone
-        s = get_session()
+        try:
+            s = get_session()
+        except Exception:
+            return {"channel_id": "—", "resource_id": "—", "page_token": "—",
+                    "exp_str": "—", "exp_color": "var(--samba-dim)", "days_left": None}
         try:
             def _get(key):
-                row = s.query(DriveSyncState).filter_by(key=key).first()
-                return row.value if row else None
+                try:
+                    row = s.query(DriveSyncState).filter_by(key=key).first()
+                    return row.value if row else None
+                except Exception:
+                    return None
 
             channel_id   = _get("drive_channel_id")   or "—"
             resource_id  = _get("drive_resource_id")  or "—"
