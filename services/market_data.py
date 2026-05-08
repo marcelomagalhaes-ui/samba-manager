@@ -462,9 +462,8 @@ class MarketDataFacade:
     def get_pracas_fisicas(self, produto: str):
         engine = get_engine()
         try:
-            import sqlalchemy
-            # Busca as mais recentes por praça (1 linha por cidade/uf)
-            sql = """
+            from sqlalchemy import text as _text
+            sql = _text("""
                 SELECT DISTINCT ON (cidade, uf)
                     cidade || '/' || uf AS "PRACA FISICA",
                     CASE
@@ -478,8 +477,9 @@ class MarketDataFacade:
                 WHERE UPPER(produto) = UPPER(:prod)
                 ORDER BY cidade, uf, timestamp DESC
                 LIMIT 20
-            """
-            df = pd.read_sql(sqlalchemy.text(sql), engine, params={"prod": produto})
+            """)
+            with engine.connect() as conn:
+                df = pd.read_sql(sql.bindparams(prod=produto), conn)
             return df
         except Exception as e:
             logger.error(f"[FACADE] Erro ao buscar pracas: {e}")

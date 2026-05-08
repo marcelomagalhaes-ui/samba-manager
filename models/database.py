@@ -352,8 +352,17 @@ class PendingApproval(Base):
 import os as _os
 
 def get_engine(url: str = None):
-    effective = url or _os.getenv("DATABASE_URL", "sqlite:///data/samba_control.db")
-    return create_engine(effective, echo=False)
+    if url is None:
+        url = _os.getenv("DATABASE_URL")
+    if url is None:
+        try:
+            import streamlit as _st
+            url = _st.secrets.get("DATABASE_URL")
+        except Exception:
+            pass
+    if not url:
+        url = "sqlite:///data/samba_control.db"
+    return create_engine(url, echo=False)
 
 
 def create_tables(url: str = None):
