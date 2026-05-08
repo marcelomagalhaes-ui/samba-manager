@@ -2384,6 +2384,7 @@ with abas[0]:
                     """), {"p": prod}).fetchall()
                 return rows
             except Exception as _e:
+                st.caption(f"⚠️ {prod}: {_e}")
                 return []
 
         _pracas_data = {
