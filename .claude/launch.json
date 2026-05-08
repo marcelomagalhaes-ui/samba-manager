@@ -1,0 +1,41 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Preview Redesign",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "3333", "--directory", "dashboards"],
+      "port": 3333
+    },
+    {
+      "name": "FastAPI Webhook (Twilio)",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "uvicorn", "api.webhook:app", "--host", "0.0.0.0", "--port", "8000", "--reload"],
+      "port": 8000
+    },
+    {
+      "name": "Streamlit Dashboard",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "streamlit", "run", "dashboards/streamlit_app.py", "--server.port", "8501", "--server.headless", "true"],
+      "port": 8501
+    },
+    {
+      "name": "Celery Worker",
+      "runtimeExecutable": "celery",
+      "runtimeArgs": ["-A", "core.celery_app", "worker", "-l", "info", "-Q", "queue_inbound,queue_extractor,queue_sync"],
+      "port": 0
+    },
+    {
+      "name": "Celery Beat (Scheduler)",
+      "runtimeExecutable": "celery",
+      "runtimeArgs": ["-A", "core.celery_app", "beat", "-l", "info"],
+      "port": 0
+    },
+    {
+      "name": "Redis (Docker)",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": ["run", "--rm", "--name", "samba_redis", "-p", "6379:6379", "redis:7-alpine"],
+      "port": 6379
+    }
+  ]
+}

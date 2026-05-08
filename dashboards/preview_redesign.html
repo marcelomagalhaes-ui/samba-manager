@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Samba Export — Preview Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   SAMBA EXPORT — DESIGN SYSTEM v2 (Brand Manual 2026)
+   Font: Montserrat | Paleta fechada FA8200 + escala de cinza
+   ===================================================================== */
+:root {
+    --so:       #FA8200;
+    --so-dim:   #C86600;
+    --so-bg:    rgba(250,130,0,0.09);
+    --so-bdr:   rgba(250,130,0,0.28);
+
+    --sb85: #262626;
+    --sb75: #404040;
+    --sb50: #7F7F7F;
+    --sb25: #BFBFBF;
+    --sb15: #D9D9D9;
+
+    --red:   #FA3232;
+    --sky:   #64C8FA;
+    --ocean: #326496;
+    --green: #329632;
+
+    --bg:       #141414;
+    --bg-soft:  #1C1C1C;
+    --bg-card:  #242424;
+    --bg-hover: rgba(250,130,0,0.04);
+    --ice:      #F5F5F5;
+    --line:     rgba(255,255,255,0.07);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    background: var(--bg);
+    color: var(--ice);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* ── SCROLLBAR ─────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(250,130,0,0.25); border-radius: 3px; }
+
+/* ── LAYOUT ────────────────────────────────────────────────────── */
+.page { max-width: 1400px; margin: 0 auto; padding: 0 20px 40px; }
+
+/* ── TICKER ────────────────────────────────────────────────────── */
+.ticker-wrap {
+    background: #0A0A0A;
+    border-bottom: 2px solid var(--so);
+    border-top: 1px solid rgba(250,130,0,0.12);
+    padding: 9px 0;
+    overflow: hidden;
+    white-space: nowrap;
+}
+.ticker-inner {
+    display: inline-flex;
+    animation: marquee 40s linear infinite;
+    gap: 0;
+}
+.ticker-item {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 0 20px; font-size: 11.5px; letter-spacing: 0.3px;
+    border-right: 1px solid rgba(255,255,255,0.05);
+}
+.t-label { color: var(--sb50); font-size: 9.5px; letter-spacing: 1px; text-transform: uppercase; }
+.t-val   { color: var(--ice); font-weight: 700; font-variant-numeric: tabular-nums; }
+.t-up    { color: var(--green); font-weight: 700; font-size: 11px; }
+.t-down  { color: var(--red);   font-weight: 700; font-size: 11px; }
+.t-flat  { color: var(--sb50); font-size: 11px; }
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* ── HEADER ────────────────────────────────────────────────────── */
+.samba-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 0 12px;
+    border-bottom: 1px solid var(--so);
+    margin-bottom: 18px;
+}
+.logo-block { display: flex; align-items: center; gap: 14px; }
+.logo-img   { height: 38px; width: auto; }
+.logo-divider { width: 1px; height: 32px; background: rgba(250,130,0,0.3); }
+.header-titles { }
+.header-desk {
+    font-size: 9px; font-weight: 800; color: var(--so);
+    letter-spacing: 3.5px; text-transform: uppercase;
+}
+.header-sub {
+    font-size: 11px; font-weight: 600; color: var(--sb50);
+    letter-spacing: 1px; margin-top: 2px;
+}
+.header-right { text-align: right; }
+.header-updated { font-size: 9px; color: var(--sb75); letter-spacing: 1px; text-transform: uppercase; }
+.header-time    { font-size: 16px; font-weight: 800; color: var(--ice); font-variant-numeric: tabular-nums; margin-top: 2px; }
+
+/* ── KPI CARDS ─────────────────────────────────────────────────── */
+.kpi-row { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; margin-bottom: 18px; }
+.kpi-card {
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    border-top: 2px solid var(--so);
+    border-radius: 12px;
+    padding: 16px 18px;
+    transition: box-shadow 0.2s, border-color 0.2s;
+}
+.kpi-card:hover { box-shadow: 0 6px 24px rgba(250,130,0,0.1); border-color: rgba(250,130,0,0.3); }
+.kpi-label {
+    font-size: 8.5px; letter-spacing: 2.5px; color: var(--sb50);
+    font-weight: 700; text-transform: uppercase; margin-bottom: 8px;
+}
+.kpi-value {
+    font-size: 26px; font-weight: 900; color: var(--ice);
+    line-height: 1; margin-bottom: 4px;
+    font-variant-numeric: tabular-nums;
+}
+.kpi-value .bid  { color: var(--ocean); }
+.kpi-value .ask  { color: var(--red); }
+.kpi-value .sep  { font-size: 18px; color: var(--sb75); }
+.kpi-sub { font-size: 11px; color: var(--so); }
+.kpi-sub .up   { color: var(--green); }
+.kpi-sub .down { color: var(--red); }
+
+/* ── SECTION TITLE ─────────────────────────────────────────────── */
+.section-title {
+    font-size: 9.5px; letter-spacing: 3px; font-weight: 800;
+    color: var(--so); text-transform: uppercase;
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 12px; margin-top: 8px;
+}
+.section-title::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(to right, rgba(250,130,0,0.25), transparent);
+}
+
+/* ── GEO NEWS FEED ─────────────────────────────────────────────── */
+.geo-scroll {
+    display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(250,130,0,0.3) transparent;
+}
+.geo-card {
+    min-width: 270px; max-width: 310px; flex-shrink: 0;
+    background: var(--bg-card); border-radius: 10px; padding: 12px 14px;
+    border-left: 3px solid var(--so);
+    border-top: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    transition: background 0.15s;
+    position: relative;
+}
+.geo-card:hover { background: rgba(250,130,0,0.04); }
+.geo-card.critica { border-left-color: var(--red); }
+.geo-card.media   { border-left-color: #C8A200; }
+.geo-pill {
+    display: inline-block; font-size: 8.5px; font-weight: 800;
+    letter-spacing: 0.8px; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 10px;
+    margin-right: 4px; margin-bottom: 6px;
+}
+.geo-pill.alta    { background: rgba(250,130,0,0.14); color: var(--so); }
+.geo-pill.critica { background: rgba(250,50,50,0.14);  color: var(--red); }
+.geo-pill.media   { background: rgba(200,162,0,0.14);  color: #C8A200; }
+.geo-tag {
+    display: inline-block; font-size: 8.5px; font-weight: 700;
+    padding: 2px 7px; border-radius: 10px; margin-right: 3px; margin-bottom: 6px;
+    background: rgba(245,245,247,0.06); color: var(--sb50);
+    border: 1px solid var(--line);
+}
+.geo-headline {
+    font-size: 12px; font-weight: 600; color: var(--ice);
+    line-height: 1.45; margin-bottom: 10px;
+    display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden;
+}
+.geo-footer { display: flex; justify-content: space-between; font-size: 10px; }
+.geo-source { color: var(--sb50); font-weight: 600; }
+.geo-date   { color: var(--sb75); }
+.geo-link {
+    position: absolute; top: 10px; right: 12px;
+    color: rgba(250,130,0,0.3); text-decoration: none; font-size: 13px;
+    transition: color 0.15s;
+}
+.geo-link:hover { color: var(--so); }
+
+/* ── TABS ─────────────────────────────────────────────────────── */
+.tabs-bar {
+    display: flex; gap: 0; border-bottom: 1px solid var(--line);
+    margin-bottom: 18px; overflow-x: auto;
+    scrollbar-width: none;
+}
+.tabs-bar::-webkit-scrollbar { display: none; }
+.tab-btn {
+    padding: 10px 18px; border: none; background: none;
+    color: var(--sb50); font-family: 'Montserrat', sans-serif;
+    font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s;
+}
+.tab-btn:hover { color: var(--sb25); }
+.tab-btn.active { color: var(--so); border-bottom-color: var(--so); }
+
+/* ── TABELA BLOOMBERG ─────────────────────────────────────────── */
+.samba-table-wrap {
+    overflow-x: auto; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--bg-card);
+}
+.samba-table {
+    width: 100%; border-collapse: collapse; font-size: 12px;
+}
+.samba-table thead tr {
+    background: rgba(250,130,0,0.07);
+    border-bottom: 1px solid rgba(250,130,0,0.2);
+}
+.samba-table th {
+    padding: 10px 14px; text-align: left;
+    font-size: 8.5px; letter-spacing: 1.5px; font-weight: 700;
+    color: var(--so); text-transform: uppercase;
+}
+.samba-table td {
+    padding: 9px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.025);
+    vertical-align: middle; white-space: nowrap;
+}
+.samba-table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+.samba-table tbody tr:last-child td { border-bottom: none; }
+.samba-table tbody tr:hover td { background: var(--bg-hover); }
+.td-name   { color: var(--ice); font-weight: 600; }
+.td-mono   { font-family: 'Montserrat', monospace; }
+.td-gold   { color: var(--so); font-family: 'Montserrat', monospace; font-weight: 700; }
+.td-dim    { color: var(--sb50); }
+.td-bid    { color: var(--ocean); font-weight: 700; font-size: 11px; }
+.td-ask    { color: var(--red);   font-weight: 700; font-size: 11px; }
+.td-status {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 9px; font-weight: 700; white-space: nowrap;
+}
+
+/* ── STATUS BADGE ─────────────────────────────────────────────── */
+.badge-negoc  { background: rgba(50,150,50,0.15);  color: var(--green); border: 1px solid rgba(50,150,50,0.3);  }
+.badge-pend   { background: rgba(250,130,0,0.15);  color: var(--so);    border: 1px solid rgba(250,130,0,0.3);  }
+.badge-lead   { background: rgba(100,200,250,0.12);color: var(--sky);   border: 1px solid rgba(100,200,250,0.3);}
+.badge-arch   { background: rgba(127,127,127,0.12);color: var(--sb50);  border: 1px solid rgba(127,127,127,0.2);}
+
+/* ── KANBAN CARD ─────────────────────────────────────────────── */
+.pipeline-group { margin-bottom: 24px; }
+.pipeline-group-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 8px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--line);
+}
+.pipeline-group-name { font-size: 11px; font-weight: 800; letter-spacing: 2px; color: var(--so); text-transform: uppercase; }
+.pipeline-group-count { font-size: 10px; color: var(--sb50); }
+
+/* ── AGENT CARD ───────────────────────────────────────────────── */
+.agent-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; margin-bottom: 20px; }
+.agent-card {
+    background: var(--bg-card); border-radius: 12px; padding: 18px 14px;
+    border: 1px solid var(--line); text-align: center;
+    transition: border-color 0.2s;
+}
+.agent-card:hover { border-color: rgba(250,130,0,0.2); }
+.agent-name {
+    font-size: 9.5px; font-weight: 800; color: var(--so);
+    letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px;
+}
+.agent-status {
+    font-size: 18px; font-weight: 900; margin-bottom: 4px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.status-dot {
+    width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+    flex-shrink: 0;
+}
+.s-ativo  { color: var(--green); }
+.s-ativo  .status-dot { background: var(--green); box-shadow: 0 0 7px rgba(50,150,50,0.6); }
+.s-recent { color: var(--so); }
+.s-recent .status-dot { background: var(--so); box-shadow: 0 0 7px rgba(250,130,0,0.6); }
+.s-idle   { color: var(--sb75); }
+.s-idle   .status-dot { background: var(--sb75); }
+.s-norun  { color: var(--sb75); }
+.s-norun  .status-dot { background: var(--sb85); }
+.agent-time { font-size: 11px; color: var(--sb75); margin-bottom: 6px; }
+.agent-desc { font-size: 10.5px; color: var(--sb50); line-height: 1.5; }
+
+/* ── PRAÇAS PILL ─────────────────────────────────────────────── */
+.praca-pill {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 7px 10px; margin-bottom: 4px;
+    background: var(--bg); border-radius: 8px; border: 1px solid var(--line);
+    transition: border-color 0.15s;
+}
+.praca-pill:hover { border-color: rgba(250,130,0,0.2); }
+.praca-name { color: var(--sb50); font-size: 11px; flex: 1; }
+.praca-brl  { color: var(--ice); font-weight: 700; font-size: 12px; padding: 0 8px; font-variant-numeric: tabular-nums; }
+.praca-usd  { color: var(--so);  font-weight: 600; font-size: 11px; font-variant-numeric: tabular-nums; }
+
+/* ── BOOK CARD ───────────────────────────────────────────────── */
+.book-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+.book-card {
+    background: var(--bg-card); border-radius: 12px; padding: 16px 12px;
+    border: 1px solid var(--line); text-align: center;
+    transition: border-color 0.2s;
+}
+.book-card:hover { border-color: rgba(250,130,0,0.2); }
+.book-comm { font-size: 9.5px; letter-spacing: 2px; color: var(--sb50); font-weight: 700; text-transform: uppercase; margin-bottom: 12px; }
+.book-row  { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.book-col  { }
+.book-lbl  { font-size: 8.5px; color: var(--sb50); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2px; }
+.book-val  { font-weight: 700; font-size: 13px; font-family: 'Montserrat', monospace; font-variant-numeric: tabular-nums; }
+.v-ask { color: var(--red); }
+.v-bid { color: var(--ocean); }
+.book-spread {
+    border-top: 1px solid var(--line); padding-top: 8px; margin-top: 6px;
+    font-size: 11px;
+}
+.v-pos { color: var(--green); font-weight: 700; }
+.v-neg { color: var(--red);   font-weight: 700; }
+
+/* ── DOC BADGE ───────────────────────────────────────────────── */
+.doc-badge {
+    display: inline-block; background: var(--so-bg);
+    color: var(--so); border: 1px solid var(--so-bdr);
+    padding: 1px 7px; border-radius: 8px; font-size: 9.5px;
+    font-weight: 700; margin: 0 3px 2px 0; letter-spacing: 0.5px;
+}
+
+/* ── COMPARE NOTE ────────────────────────────────────────────── */
+.preview-note {
+    background: rgba(250,130,0,0.08);
+    border: 1px solid rgba(250,130,0,0.3);
+    border-left: 3px solid var(--so);
+    border-radius: 8px; padding: 12px 16px;
+    font-size: 12px; color: var(--sb25);
+    margin: 20px 0 14px;
+}
+.preview-note strong { color: var(--so); }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TICKER
+     ═══════════════════════════════════════════════════════════ -->
+<div class="ticker-wrap">
+  <div class="ticker-inner" id="ticker"></div>
+</div>
+
+<div class="page">
+
+<!-- ═══════════════════════════════════════════════════════════
+     PREVIEW NOTE
+     ═══════════════════════════════════════════════════════════ -->
+<div class="preview-note">
+  <strong>PRÉVIA DE REDESIGN</strong> — Brand Manual v3 · Montserrat · Paleta fechada #FA8200 + escala de cinza oficial<br>
+  <span style="font-size:11px">Aprovado este layout → aplicamos ao <code>streamlit_app.py</code> sem alterar nenhuma lógica de dados.</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     HEADER
+     ═══════════════════════════════════════════════════════════ -->
+<div class="samba-header">
+  <div class="logo-block">
+    <img class="logo-img" src="../assets/logo.png" alt="Samba Export" onerror="this.style.display='none'; document.getElementById('wordmark').style.display='flex'">
+    <div id="wordmark" style="display:none;align-items:baseline;gap:0;font-size:20px;font-weight:900;line-height:1">
+      <span style="color:var(--so)">samba</span><span style="color:var(--ice);letter-spacing:2px;font-weight:800">EXPORT</span>
+    </div>
+    <div class="logo-divider"></div>
+    <div class="header-titles">
+      <div class="header-desk">Global Commodities Control Desk</div>
+      <div class="header-sub">Export Intelligence Platform</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="header-updated">Updated</div>
+    <div class="header-time" id="htime">--/--/---- --:--:--</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     KPI CARDS
+     ═══════════════════════════════════════════════════════════ -->
+<div class="kpi-row">
+  <div class="kpi-card">
+    <div class="kpi-label">Deals Ativos</div>
+    <div class="kpi-value">47</div>
+    <div class="kpi-sub">no pipeline</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">BID / ASK</div>
+    <div class="kpi-value"><span class="bid">22</span><span class="sep"> / </span><span class="ask">25</span></div>
+    <div class="kpi-sub">compras · vendas</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Soja CBOT</div>
+    <div class="kpi-value">384.20</div>
+    <div class="kpi-sub">USD/MT · <span class="up">+0.82%</span></div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Açúcar ICE</div>
+    <div class="kpi-value">498.10</div>
+    <div class="kpi-sub">USD/MT · <span class="down">−0.41%</span></div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Dólar PTAX</div>
+    <div class="kpi-value">5.731</div>
+    <div class="kpi-sub">USD/BRL · <span class="up">+0.14%</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     GEO NEWS FEED
+     ═══════════════════════════════════════════════════════════ -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+  <div class="section-title" style="margin:0">🌍 Sentinel Geopolítico — Impacto no Pipeline</div>
+  <span style="font-size:10px;color:var(--sb75)">NewsData.io · 25/04 14:32 · 8 alertas</span>
+</div>
+<div class="geo-scroll" style="margin-bottom:18px">
+
+  <div class="geo-card alta">
+    <a class="geo-link" href="#">↗</a>
+    <div><span class="geo-pill alta">🟠 Alto</span><span class="geo-tag">SOJA</span><span class="geo-tag">MILHO</span></div>
+    <div class="geo-headline">China impõe tarifas adicionais de 34% sobre importações agrícolas dos EUA</div>
+    <div class="geo-footer"><span class="geo-source">Reuters</span><span class="geo-date">2026-04-24</span></div>
+  </div>
+
+  <div class="geo-card critica">
+    <a class="geo-link" href="#">↗</a>
+    <div><span class="geo-pill critica">🔴 Crítico</span><span class="geo-tag">GLOBAL</span></div>
+    <div class="geo-headline">Fed mantém juros e sinaliza 2 cortes em 2026 — dólar recua 1.2%</div>
+    <div class="geo-footer"><span class="geo-source">Bloomberg</span><span class="geo-date">2026-04-24</span></div>
+  </div>
+
+  <div class="geo-card media">
+    <a class="geo-link" href="#">↗</a>
+    <div><span class="geo-pill media">🟡 Médio</span><span class="geo-tag">AÇÚCAR</span></div>
+    <div class="geo-headline">Índia prorroga restrições à exportação de açúcar por mais 90 dias</div>
+    <div class="geo-footer"><span class="geo-source">FT Commodities</span><span class="geo-date">2026-04-23</span></div>
+  </div>
+
+  <div class="geo-card alta">
+    <a class="geo-link" href="#">↗</a>
+    <div><span class="geo-pill alta">🟠 Alto</span><span class="geo-tag">FRANGO</span></div>
+    <div class="geo-headline">Vietnã suspende importações de frango congelado do Brasil por 30 dias para revisão sanitária</div>
+    <div class="geo-footer"><span class="geo-source">Agência Brasil</span><span class="geo-date">2026-04-22</span></div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TABS
+     ═══════════════════════════════════════════════════════════ -->
+<div class="tabs-bar">
+  <button class="tab-btn active">Visão Geral</button>
+  <button class="tab-btn">Pipeline</button>
+  <button class="tab-btn">Arbitragem</button>
+  <button class="tab-btn">Book</button>
+  <button class="tab-btn">Agentes</button>
+  <button class="tab-btn">Follow-ups</button>
+  <button class="tab-btn">Compliance</button>
+  <button class="tab-btn">Samba Assistant</button>
+  <button class="tab-btn">Base de Conhecimento</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     ABA: VISÃO GERAL — Negociações recentes
+     ═══════════════════════════════════════════════════════════ -->
+<div class="section-title">Negociações Ativas — Últimos 15</div>
+
+<div class="samba-table-wrap" style="margin-bottom:20px">
+<table class="samba-table">
+  <thead><tr>
+    <th>Negociação</th><th>Commodity</th><th>Dir</th>
+    <th>Preço</th><th>Stage</th><th>Grupo</th><th>Data</th>
+  </tr></thead>
+  <tbody>
+    <tr>
+      <td class="td-name">Samba x Nguyen Agro Vietnam</td>
+      <td class="td-dim">Milho Non-GMO</td>
+      <td><span class="td-bid">BID</span></td>
+      <td class="td-gold">312.50 USD</td>
+      <td class="td-dim">Em Negociação</td>
+      <td class="td-dim">Nguyen Agro VN</td>
+      <td class="td-dim" style="font-size:11px">2026-04-24</td>
+    </tr>
+    <tr>
+      <td class="td-name">Samba x Al Waha Trading</td>
+      <td class="td-dim">Açúcar ICUMSA 45</td>
+      <td><span class="td-ask">ASK</span></td>
+      <td class="td-gold">498.00 USD</td>
+      <td class="td-dim">Aguardando Comprador</td>
+      <td class="td-dim">Al Waha Dubai</td>
+      <td class="td-dim" style="font-size:11px">2026-04-23</td>
+    </tr>
+    <tr>
+      <td class="td-name">Samba x Santos Trade Corp</td>
+      <td class="td-dim">Soja Non-GMO</td>
+      <td><span class="td-bid">BID</span></td>
+      <td class="td-gold">387.00 USD</td>
+      <td class="td-dim">Lead WhatsApp</td>
+      <td class="td-dim">Santos Trade</td>
+      <td class="td-dim" style="font-size:11px">2026-04-22</td>
+    </tr>
+    <tr>
+      <td class="td-name">Samba x Brako Int'l Malaysia</td>
+      <td class="td-dim">Farelo de Soja</td>
+      <td><span class="td-ask">ASK</span></td>
+      <td class="td-gold">292.75 USD</td>
+      <td class="td-dim">FCO Enviado</td>
+      <td class="td-dim">Brako MY</td>
+      <td class="td-dim" style="font-size:11px">2026-04-21</td>
+    </tr>
+    <tr>
+      <td class="td-name">Samba x Kira Foods Kenya</td>
+      <td class="td-dim">Frango CIF Mombasa</td>
+      <td><span class="td-bid">BID</span></td>
+      <td class="td-gold">2 150.00 USD</td>
+      <td class="td-dim">Reunião Agendada</td>
+      <td class="td-dim">Kira Foods KE</td>
+      <td class="td-dim" style="font-size:11px">2026-04-20</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     ABA: PIPELINE — preview de grupo
+     ═══════════════════════════════════════════════════════════ -->
+<div class="section-title">Pipeline Comercial — Visão Integrada</div>
+
+<!-- Mini KPIs do pipeline -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+  <div style="background:var(--bg-card);border:1px solid var(--line);border-radius:8px;padding:14px;text-align:center">
+    <div style="font-size:26px;font-weight:900;color:var(--so)">47</div>
+    <div style="font-size:9px;color:var(--sb50);letter-spacing:1.5px;text-transform:uppercase;margin-top:3px">Deals Ativos</div>
+  </div>
+  <div style="background:var(--bg-card);border:1px solid var(--line);border-radius:8px;padding:14px;text-align:center">
+    <div style="font-size:26px;font-weight:900;color:var(--green)">12</div>
+    <div style="font-size:9px;color:var(--sb50);letter-spacing:1.5px;text-transform:uppercase;margin-top:3px">Em Negociação</div>
+  </div>
+  <div style="background:var(--bg-card);border:1px solid var(--line);border-radius:8px;padding:14px;text-align:center">
+    <div style="font-size:26px;font-weight:900;color:var(--so)">19</div>
+    <div style="font-size:9px;color:var(--sb50);letter-spacing:1.5px;text-transform:uppercase;margin-top:3px">Aguardando</div>
+  </div>
+  <div style="background:var(--bg-card);border:1px solid var(--line);border-radius:8px;padding:14px;text-align:center">
+    <div style="font-size:26px;font-weight:900;color:var(--sky)">8</div>
+    <div style="font-size:9px;color:var(--sb50);letter-spacing:1.5px;text-transform:uppercase;margin-top:3px">🇻🇳 Vietnã</div>
+  </div>
+</div>
+
+<!-- Grupo de deals -->
+<div class="pipeline-group">
+  <div class="pipeline-group-header">
+    <span class="pipeline-group-name">Al Waha Trading — Dubai</span>
+    <span class="pipeline-group-count">2 deals · 🇦🇪 Oriente Médio</span>
+  </div>
+  <div class="samba-table-wrap">
+  <table class="samba-table">
+    <thead><tr>
+      <th style="width:90px">JOB / Data</th>
+      <th>Produto</th><th>Tipo</th><th>Resumo</th>
+      <th>Comprador</th><th>Fornecedor</th><th>Status</th><th>Docs</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td class="td-dim" style="font-size:10px">AW-241<br><span style="color:#555">24/04/26</span></td>
+        <td>🍬 <span class="td-name">Açúcar ICUMSA 45</span></td>
+        <td class="td-dim" style="font-size:11px">📤 Venda</td>
+        <td class="td-gold" style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis">50.000 MT · CIF Jebel Ali · USD 498/MT</td>
+        <td class="td-dim" style="font-size:11px">Al Waha Dubai</td>
+        <td class="td-dim" style="font-size:11px">Usina São Martinho</td>
+        <td><span class="td-status badge-pend">AGUARDANDO COMPRADOR</span></td>
+        <td><span class="doc-badge">📄 FCO</span><span class="doc-badge">📄 SCO</span></td>
+      </tr>
+      <tr>
+        <td class="td-dim" style="font-size:10px">AW-238<br><span style="color:#555">19/04/26</span></td>
+        <td>🌿 <span class="td-name">Soja Non-GMO</span></td>
+        <td class="td-dim" style="font-size:11px">📥 Compra</td>
+        <td class="td-gold" style="font-size:11px">20.000 MT · CIF · USD 384/MT</td>
+        <td class="td-dim" style="font-size:11px">Al Waha Dubai</td>
+        <td class="td-dim" style="font-size:11px">—</td>
+        <td><span class="td-status badge-negoc">EM NEGOCIAÇÃO</span></td>
+        <td><span class="doc-badge">📄 LOI</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     ORDER BOOK
+     ═══════════════════════════════════════════════════════════ -->
+<div class="section-title" style="margin-top:10px">Order Book — Spread por Commodity</div>
+<div class="book-grid" style="margin-bottom:20px">
+  <div class="book-card">
+    <div class="book-comm">Açúcar ICUMSA 45</div>
+    <div class="book-row">
+      <div class="book-col"><div class="book-lbl">Best ASK</div><div class="book-val v-ask">498.00</div></div>
+      <div class="book-col"><div class="book-lbl">Best BID</div><div class="book-val v-bid">503.50</div></div>
+    </div>
+    <div class="book-spread">
+      Spread <span class="v-pos">+5.50</span>
+      <span style="font-size:10px;color:var(--sb75);margin-left:8px">6 deals</span>
+    </div>
+  </div>
+  <div class="book-card">
+    <div class="book-comm">Soja CBOT</div>
+    <div class="book-row">
+      <div class="book-col"><div class="book-lbl">Best ASK</div><div class="book-val v-ask">383.00</div></div>
+      <div class="book-col"><div class="book-lbl">Best BID</div><div class="book-val v-bid">387.50</div></div>
+    </div>
+    <div class="book-spread">
+      Spread <span class="v-pos">+4.50</span>
+      <span style="font-size:10px;color:var(--sb75);margin-left:8px">9 deals</span>
+    </div>
+  </div>
+  <div class="book-card">
+    <div class="book-comm">Milho Non-GMO</div>
+    <div class="book-row">
+      <div class="book-col"><div class="book-lbl">Best ASK</div><div class="book-val v-ask">314.00</div></div>
+      <div class="book-col"><div class="book-lbl">Best BID</div><div class="book-val v-bid">—</div></div>
+    </div>
+    <div class="book-spread">
+      Spread <span style="color:var(--sb75)">—</span>
+      <span style="font-size:10px;color:var(--sb75);margin-left:8px">3 deals</span>
+    </div>
+  </div>
+  <div class="book-card">
+    <div class="book-comm">Farelo de Soja</div>
+    <div class="book-row">
+      <div class="book-col"><div class="book-lbl">Best ASK</div><div class="book-val v-ask">290.00</div></div>
+      <div class="book-col"><div class="book-lbl">Best BID</div><div class="book-val v-bid">295.00</div></div>
+    </div>
+    <div class="book-spread">
+      Spread <span class="v-pos">+5.00</span>
+      <span style="font-size:10px;color:var(--sb75);margin-left:8px">4 deals</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     AGENTES
+     ═══════════════════════════════════════════════════════════ -->
+<div class="section-title">Status dos Agentes</div>
+<div class="agent-grid">
+  <div class="agent-card">
+    <div class="agent-name">Manager Agent</div>
+    <div class="agent-status s-ativo"><span class="status-dot"></span>ATIVO</div>
+    <div class="agent-time">25/04 14:27</div>
+    <div class="agent-desc">Classifica BID/ASK, atribui sócios e detecta arbitragem</div>
+  </div>
+  <div class="agent-card">
+    <div class="agent-name">Extractor Agent</div>
+    <div class="agent-status s-ativo"><span class="status-dot"></span>ATIVO</div>
+    <div class="agent-time">25/04 14:25</div>
+    <div class="agent-desc">Extrai commodities, preço e volume de mensagens brutas</div>
+  </div>
+  <div class="agent-card">
+    <div class="agent-name">Market Agent</div>
+    <div class="agent-status s-recent"><span class="status-dot"></span>RECENTE</div>
+    <div class="agent-time">25/04 13:50</div>
+    <div class="agent-desc">Scraping de mercado físico e snapshots CBOT/ICE/FX</div>
+  </div>
+  <div class="agent-card">
+    <div class="agent-name">Risk Agent</div>
+    <div class="agent-status s-idle"><span class="status-dot"></span>OCIOSO</div>
+    <div class="agent-time">25/04 10:12</div>
+    <div class="agent-desc">Score de risco por deal via IA</div>
+  </div>
+  <div class="agent-card">
+    <div class="agent-name">Report Agent</div>
+    <div class="agent-status s-norun"><span class="status-dot"></span>SEM LOG</div>
+    <div class="agent-time">Nunca executado</div>
+    <div class="agent-desc">Gera relatórios PDF e resumos por sócio</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MERCADO INTERNO
+     ═══════════════════════════════════════════════════════════ -->
+<div class="section-title">Mercado Interno — Preços Físicos BRL/Saca</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
+  <div>
+    <div style="font-size:9.5px;letter-spacing:2px;color:var(--so);font-weight:800;margin-bottom:8px;text-transform:uppercase">Soja</div>
+    <div class="praca-pill"><span class="praca-name">Cascavel PR</span><span class="praca-brl">R$ 134/sc</span><span class="praca-usd">≈ USD 374/t</span></div>
+    <div class="praca-pill"><span class="praca-name">Sorriso MT</span><span class="praca-brl">R$ 131/sc</span><span class="praca-usd">≈ USD 365/t</span></div>
+    <div class="praca-pill"><span class="praca-name">Rondonópolis MT</span><span class="praca-brl">R$ 132/sc</span><span class="praca-usd">≈ USD 368/t</span></div>
+  </div>
+  <div>
+    <div style="font-size:9.5px;letter-spacing:2px;color:var(--so);font-weight:800;margin-bottom:8px;text-transform:uppercase">Milho</div>
+    <div class="praca-pill"><span class="praca-name">Maringá PR</span><span class="praca-brl">R$ 68/sc</span><span class="praca-usd">≈ USD 227/t</span></div>
+    <div class="praca-pill"><span class="praca-name">Uberlândia MG</span><span class="praca-brl">R$ 66/sc</span><span class="praca-usd">≈ USD 220/t</span></div>
+    <div class="praca-pill"><span class="praca-name">Campo Grande MS</span><span class="praca-brl">R$ 64/sc</span><span class="praca-usd">≈ USD 213/t</span></div>
+  </div>
+  <div>
+    <div style="font-size:9.5px;letter-spacing:2px;color:var(--so);font-weight:800;margin-bottom:8px;text-transform:uppercase">Açúcar</div>
+    <div class="praca-pill"><span class="praca-name">Ribeirão Preto SP</span><span class="praca-brl">R$ 143/sc</span><span class="praca-usd">≈ USD 476/t</span></div>
+    <div class="praca-pill"><span class="praca-name">Piracicaba SP</span><span class="praca-brl">R$ 141/sc</span><span class="praca-usd">≈ USD 470/t</span></div>
+    <div class="praca-pill"><span class="praca-name">Araçatuba SP</span><span class="praca-brl">R$ 140/sc</span><span class="praca-usd">≈ USD 466/t</span></div>
+  </div>
+</div>
+
+</div><!-- /page -->
+
+<script>
+// Clock
+function updateTime() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  document.getElementById('htime').textContent =
+    `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+}
+updateTime(); setInterval(updateTime, 1000);
+
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+// Ticker
+const tickers = [
+  {label:'SOJA CBOT',  val:'USD 384.20/MT', var:'+0.82%', up:true},
+  {label:'MILHO CBOT', val:'USD 196.50/MT', var:'-0.31%', up:false},
+  {label:'AÇÚCAR ICE', val:'USD 498.10/MT', var:'-0.41%', up:false},
+  {label:'FARELO SOJA',val:'USD 291.30/MT', var:'+1.12%', up:true},
+  {label:'CACAU ICE',  val:'USD 7 840/MT',  var:'+2.30%', up:true},
+  {label:'CAFÉ ICE',   val:'USD 5 210/MT',  var:'-0.55%', up:false},
+  {label:'ALGODÃO ICE',val:'USD 1 650/MT',  var:'+0.28%', up:true},
+  {label:'USD/BRL',    val:'5.7314',        var:'+0.14%', up:true},
+];
+const sep = '<span style="color:#222;padding:0 4px">|</span>';
+let html = '';
+for (let r = 0; r < 4; r++) {
+  tickers.forEach(t => {
+    const cls = t.up ? 't-up' : 't-down';
+    html += `<div class="ticker-item">
+      <span class="t-label">${t.label}</span>
+      <span class="t-val">${t.val}</span>
+      <span class="${cls}">${t.var}</span>
+    </div>${sep}`;
+  });
+}
+document.getElementById('ticker').innerHTML = html;
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CALCULADORA DE COMMODITIES — Enterprise Bidirectional Converter
+     ═══════════════════════════════════════════════════════════════════ -->
+<style>
+/* ── FAB ─────────────────────────────────────────────────────────── */
+#calc-fab {
+  position: fixed; bottom: 28px; right: 28px; z-index: 9000;
+  width: 58px; height: 58px; border-radius: 50%;
+  background: var(--so); border: none; cursor: pointer;
+  box-shadow: 0 4px 24px rgba(250,130,0,0.50);
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .18s, box-shadow .18s, background .18s;
+  font-size: 22px; color: #fff; font-family: inherit;
+}
+#calc-fab:hover { transform: scale(1.08); box-shadow: 0 6px 30px rgba(250,130,0,0.65); }
+#calc-fab.open { background: #2A2A2A; box-shadow: 0 4px 16px rgba(0,0,0,.5); }
+#calc-fab .fab-label {
+  position: absolute; right: 66px; background: #111;
+  color: var(--so); font-size: 10px; font-weight: 700; letter-spacing: .8px;
+  padding: 5px 10px; border-radius: 6px; white-space: nowrap;
+  border: 1px solid rgba(250,130,0,.25); pointer-events: none;
+  opacity: 0; transition: opacity .2s; box-shadow: 0 4px 12px rgba(0,0,0,.4);
+}
+#calc-fab:hover .fab-label { opacity: 1; }
+
+/* ── OVERLAY ─────────────────────────────────────────────────────── */
+#calc-overlay {
+  display: none; position: fixed; inset: 0; z-index: 8900;
+  background: rgba(0,0,0,.5); backdrop-filter: blur(4px);
+}
+#calc-overlay.show { display: block; }
+
+/* ── MODAL ───────────────────────────────────────────────────────── */
+#calc-modal {
+  display: none; position: fixed; z-index: 9100;
+  bottom: 96px; right: 28px;
+  width: 580px; max-width: calc(100vw - 40px);
+  background: #191919; border: 1px solid rgba(250,130,0,.22);
+  border-radius: 14px; overflow: hidden;
+  box-shadow: 0 24px 70px rgba(0,0,0,.75);
+  animation: calcSlideUp .2s cubic-bezier(.16,1,.3,1);
+}
+#calc-modal.show { display: block; }
+@keyframes calcSlideUp {
+  from { opacity: 0; transform: translateY(24px) scale(.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── MODAL HEADER ────────────────────────────────────────────────── */
+.calc-header {
+  background: #111; padding: 13px 18px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 2px solid var(--so);
+}
+.calc-title { font-size: 11px; font-weight: 800; letter-spacing: 1.6px; color: var(--so); }
+.calc-header-right { display:flex; align-items:center; gap:10px; }
+.calc-badge {
+  font-size: 9px; font-weight: 700; letter-spacing: .8px;
+  background: rgba(250,130,0,.12); color: var(--so);
+  border: 1px solid rgba(250,130,0,.3); border-radius: 4px;
+  padding: 2px 8px;
+}
+.calc-close {
+  background: none; border: none; color: var(--sb50); cursor: pointer;
+  font-size: 16px; line-height: 1; padding: 3px 7px; border-radius: 5px;
+  transition: color .15s, background .15s;
+}
+.calc-close:hover { color: #fff; background: rgba(255,255,255,.08); }
+
+/* ── COMMODITY TABS ──────────────────────────────────────────────── */
+.calc-tabs { display: flex; background: #111; border-bottom: 1px solid var(--line); }
+.calc-tab {
+  flex: 1; padding: 9px 4px; text-align: center; font-size: 10px;
+  font-weight: 700; letter-spacing: .9px; cursor: pointer;
+  color: var(--sb50); border-bottom: 2px solid transparent;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.calc-tab:hover { color: var(--sb25); background: rgba(255,255,255,.03); }
+.calc-tab.active { color: var(--so); border-bottom-color: var(--so); background: rgba(250,130,0,.04); }
+
+/* ── TOGGLE PILL ─────────────────────────────────────────────────── */
+.toggle-pill {
+  display: inline-flex; background: #111;
+  border: 1px solid rgba(255,255,255,.1); border-radius: 6px;
+  overflow: hidden; margin-bottom: 5px;
+}
+.toggle-pill button {
+  border: none; background: none; color: var(--sb50);
+  font-family: inherit; font-size: 9px; font-weight: 700; letter-spacing: .7px;
+  padding: 4px 9px; cursor: pointer; transition: color .12s, background .12s;
+}
+.toggle-pill button.active {
+  background: var(--so); color: #fff;
+}
+.toggle-pill button:not(.active):hover { color: var(--sb25); }
+
+/* ── INPUTS AREA ─────────────────────────────────────────────────── */
+.calc-inputs {
+  display: grid; grid-template-columns: 1.5fr 1.4fr 0.85fr 1.05fr;
+  gap: 10px; padding: 13px 16px 10px;
+}
+.calc-field { display:flex; flex-direction:column; }
+.calc-field-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 5px;
+}
+.calc-field-head label {
+  font-size: 9px; font-weight: 700; letter-spacing: 1px;
+  color: var(--sb50); text-transform: uppercase;
+}
+.calc-field input {
+  width: 100%; background: #111; border: 1px solid rgba(255,255,255,.1);
+  border-radius: 7px; padding: 8px 10px; color: #fff; font-family: inherit;
+  font-size: 13px; font-weight: 600; outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.calc-field input:focus {
+  border-color: var(--so);
+  box-shadow: 0 0 0 2px rgba(250,130,0,.12);
+}
+.calc-field .calc-equiv {
+  font-size: 9px; color: rgba(250,130,0,.7); margin-top: 4px; text-align: right;
+  min-height: 13px; font-weight: 600;
+}
+
+/* ── DIVIDER ─────────────────────────────────────────────────────── */
+.calc-divider { height: 1px; background: var(--line); margin: 2px 16px 0; }
+
+/* ── RESULT GRID ─────────────────────────────────────────────────── */
+.calc-results {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 8px; padding: 12px 16px 14px;
+}
+.calc-card {
+  background: #111; border: 1px solid rgba(255,255,255,.07);
+  border-radius: 9px; padding: 12px 13px;
+  transition: border-color .2s, box-shadow .2s; position: relative;
+}
+.calc-card:hover {
+  border-color: rgba(250,130,0,.28);
+  box-shadow: 0 4px 14px rgba(0,0,0,.3);
+}
+.calc-card-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 1px;
+  color: var(--sb50); text-transform: uppercase; margin-bottom: 7px;
+}
+.calc-card-value { font-size: 15px; font-weight: 800; color: #fff; line-height: 1.1; }
+.calc-card-value2 { font-size: 11px; font-weight: 700; color: var(--sb25); margin-top: 3px; }
+.calc-card-sub { font-size: 10px; color: var(--sb50); margin-top: 2px; }
+/* spread variants */
+.calc-card.spread-pos { border-color: rgba(50,150,50,.38); }
+.calc-card.spread-pos .calc-card-value { color: var(--green); }
+.calc-card.spread-neg { border-color: rgba(250,50,50,.3); }
+.calc-card.spread-neg .calc-card-value { color: var(--red); }
+.calc-card.spread-zero .calc-card-value { color: var(--sb25); }
+/* qty card special */
+.calc-card.qty-card { border-color: rgba(250,130,0,.2); }
+.calc-card.qty-card .calc-card-value { color: var(--so); }
+
+/* ── SUMMARY BAR ─────────────────────────────────────────────────── */
+.calc-summary {
+  margin: 0 16px 12px; padding: 9px 13px;
+  background: rgba(250,130,0,.07); border: 1px solid rgba(250,130,0,.2);
+  border-radius: 8px; display: flex; align-items: center; gap: 8px;
+  flex-wrap: wrap;
+}
+.calc-summary-item { font-size: 10px; font-weight: 700; color: var(--sb25); }
+.calc-summary-item span { color: var(--so); }
+.calc-summary-sep { color: var(--line); font-size: 14px; }
+
+/* ── FOOTER NOTE ─────────────────────────────────────────────────── */
+.calc-footer {
+  padding: 7px 16px 10px;
+  font-size: 9px; color: var(--sb75);
+  border-top: 1px solid var(--line);
+  display: flex; align-items: center; gap: 6px;
+}
+</style>
+
+<!-- FAB button -->
+<button id="calc-fab" onclick="calcToggle()" title="Calculadora de Commodities">
+  <span style="font-size:22px">⊞</span>
+  <span class="fab-label">CALCULADORA</span>
+</button>
+
+<!-- Dark overlay -->
+<div id="calc-overlay" onclick="calcClose()"></div>
+
+<!-- Modal -->
+<div id="calc-modal">
+  <!-- Header -->
+  <div class="calc-header">
+    <span class="calc-title">⊞ CALCULADORA DE COMMODITIES</span>
+    <div class="calc-header-right">
+      <span class="calc-badge">BIDIRECIONAL</span>
+      <button class="calc-close" onclick="calcClose()">✕</button>
+    </div>
+  </div>
+
+  <!-- Commodity tabs -->
+  <div class="calc-tabs">
+    <div class="calc-tab active" data-comm="soja"   onclick="calcSelectComm(this)">🫘 SOJA</div>
+    <div class="calc-tab"        data-comm="milho"  onclick="calcSelectComm(this)">🌽 MILHO</div>
+    <div class="calc-tab"        data-comm="cafe"   onclick="calcSelectComm(this)">☕ CAFÉ</div>
+    <div class="calc-tab"        data-comm="acucar" onclick="calcSelectComm(this)">🍬 AÇÚCAR</div>
+    <div class="calc-tab"        data-comm="trigo"  onclick="calcSelectComm(this)">🌾 TRIGO</div>
+  </div>
+
+  <!-- Inputs (bidirectional) -->
+  <div class="calc-inputs">
+    <!-- Quantity + mode toggle -->
+    <div class="calc-field">
+      <div class="calc-field-head">
+        <label>Quantidade</label>
+        <div class="toggle-pill" id="qty-toggle">
+          <button class="active" onclick="setQtyMode('sacas',this)">SACAS</button>
+          <button onclick="setQtyMode('mt',this)">MT</button>
+        </div>
+      </div>
+      <input type="text" id="ci-qty" value="2.000.000" oninput="calcUpdate()">
+      <div class="calc-equiv" id="ci-qty-equiv">= — MT</div>
+    </div>
+    <!-- Price + mode toggle -->
+    <div class="calc-field">
+      <div class="calc-field-head">
+        <label>Preço</label>
+        <div class="toggle-pill" id="price-toggle">
+          <button class="active" onclick="setPriceMode('brl_saca',this)">R$/SC</button>
+          <button onclick="setPriceMode('usd_mt',this)">USD/MT</button>
+          <button onclick="setPriceMode('brl_mt',this)">BRL/MT</button>
+        </div>
+      </div>
+      <input type="text" id="ci-price" value="105,00" oninput="calcUpdate()">
+      <div class="calc-equiv" id="ci-price-equiv">= — USD/MT</div>
+    </div>
+    <!-- FX -->
+    <div class="calc-field">
+      <div class="calc-field-head"><label>Câmbio</label></div>
+      <input type="text" id="ci-fx" value="5,75" oninput="calcUpdate()">
+      <div class="calc-equiv">R$ / USD</div>
+    </div>
+    <!-- CBOT/ICE ref -->
+    <div class="calc-field">
+      <div class="calc-field-head"><label>Ref. Bolsa</label></div>
+      <input type="text" id="ci-ref" value="920,00" oninput="calcUpdate()">
+      <div class="calc-equiv" id="ci-ref-unit">¢/bu (CBOT)</div>
+    </div>
+  </div>
+
+  <div class="calc-divider"></div>
+
+  <!-- Result cards -->
+  <div class="calc-results">
+    <div class="calc-card qty-card">
+      <div class="calc-card-label">Volume Total</div>
+      <div class="calc-card-value" id="cr-primary">—</div>
+      <div class="calc-card-value2" id="cr-secondary">—</div>
+      <div class="calc-card-sub" id="cr-kg">—</div>
+    </div>
+    <div class="calc-card">
+      <div class="calc-card-label">Total BRL</div>
+      <div class="calc-card-value" id="cr-brl">—</div>
+      <div class="calc-card-value2" id="cr-brl-saca">—</div>
+      <div class="calc-card-sub" id="cr-brl-sub">—</div>
+    </div>
+    <div class="calc-card">
+      <div class="calc-card-label">Total USD</div>
+      <div class="calc-card-value" id="cr-usd">—</div>
+      <div class="calc-card-value2" id="cr-usd-mt">—</div>
+      <div class="calc-card-sub" id="cr-usd-sub">—</div>
+    </div>
+    <div class="calc-card">
+      <div class="calc-card-label">Preço Unitário</div>
+      <div class="calc-card-value" id="cr-usdmt">—</div>
+      <div class="calc-card-value2" id="cr-brlmt">—</div>
+      <div class="calc-card-sub" id="cr-brlsc">—</div>
+    </div>
+    <div class="calc-card">
+      <div class="calc-card-label">Ref. Bolsa USD/MT</div>
+      <div class="calc-card-value" id="cr-refmt">—</div>
+      <div class="calc-card-value2" id="cr-refbrl">—</div>
+      <div class="calc-card-sub" id="cr-refmt-sub">—</div>
+    </div>
+    <div class="calc-card" id="cr-spread-card">
+      <div class="calc-card-label">Spread vs. Bolsa</div>
+      <div class="calc-card-value" id="cr-spread">—</div>
+      <div class="calc-card-value2" id="cr-spread-brl">—</div>
+      <div class="calc-card-sub" id="cr-spread-pct">—</div>
+    </div>
+  </div>
+
+  <!-- Summary bar -->
+  <div class="calc-summary" id="calc-summary">
+    <div class="calc-summary-item">Volume: <span id="cs-vol">—</span></div>
+    <div class="calc-summary-sep">·</div>
+    <div class="calc-summary-item">Total: <span id="cs-total">—</span></div>
+    <div class="calc-summary-sep">·</div>
+    <div class="calc-summary-item">Spread: <span id="cs-spread">—</span></div>
+    <div class="calc-summary-sep">·</div>
+    <div class="calc-summary-item">Câmbio: <span id="cs-fx">—</span></div>
+  </div>
+
+  <div class="calc-footer">
+    <span>📊</span>
+    <span id="calc-footer-note">Ref. em ¢/bushel (CBOT) ou ¢/lb (ICE) · Spread = preço operação − referência bolsa em USD/MT · Dados para simulação</span>
+  </div>
+</div>
+
+<script>
+// ── Commodity metadata ────────────────────────────────────────────
+const COMM = {
+  soja:   { name:'Soja',   kg:60, unit:'bushel', exch:'CBOT', buKg:27.2155,  defRef:920  },
+  milho:  { name:'Milho',  kg:60, unit:'bushel', exch:'CBOT', buKg:25.4012,  defRef:415  },
+  cafe:   { name:'Café',   kg:60, unit:'lb',     exch:'ICE',  buKg:0.453592, defRef:21000},
+  acucar: { name:'Açúcar', kg:50, unit:'lb',     exch:'ICE',  buKg:0.453592, defRef:1950 },
+  trigo:  { name:'Trigo',  kg:60, unit:'bushel', exch:'CBOT', buKg:27.2155,  defRef:530  },
+};
+
+let currentComm  = 'soja';
+let qtyMode      = 'sacas';   // 'sacas' | 'mt'
+let priceMode    = 'brl_saca'; // 'brl_saca' | 'usd_mt' | 'brl_mt'
+
+// ── Toggle handlers ───────────────────────────────────────────────
+function setQtyMode(mode, btn) {
+  qtyMode = mode;
+  document.querySelectorAll('#qty-toggle button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // Reset input to sensible default when switching
+  const c = COMM[currentComm];
+  if (mode === 'sacas') {
+    document.getElementById('ci-qty').value = '2.000.000';
+  } else {
+    document.getElementById('ci-qty').value = '120.000';
+  }
+  calcUpdate();
+}
+function setPriceMode(mode, btn) {
+  priceMode = mode;
+  document.querySelectorAll('#price-toggle button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  calcUpdate();
+}
+
+function calcToggle() {
+  const modal = document.getElementById('calc-modal');
+  const overlay = document.getElementById('calc-overlay');
+  const fab = document.getElementById('calc-fab');
+  const showing = modal.classList.contains('show');
+  if (showing) { calcClose(); }
+  else {
+    modal.classList.add('show');
+    overlay.classList.add('show');
+    fab.classList.add('open');
+    fab.querySelector('span:first-child').textContent = '✕';
+    calcUpdate();
+  }
+}
+function calcClose() {
+  document.getElementById('calc-modal').classList.remove('show');
+  document.getElementById('calc-overlay').classList.remove('show');
+  const fab = document.getElementById('calc-fab');
+  fab.classList.remove('open');
+  fab.querySelector('span:first-child').textContent = '⊞';
+}
+
+function calcSelectComm(el) {
+  document.querySelectorAll('.calc-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentComm = el.dataset.comm;
+  const c = COMM[currentComm];
+  document.getElementById('ci-ref').value = fmtN(c.defRef);
+  document.getElementById('ci-ref-unit').textContent = `¢/${c.unit} (${c.exch})`;
+  document.getElementById('calc-footer-note').textContent =
+    `${c.name} · 1 saca = ${c.kg} kg · Ref. ${c.exch} em ¢/${c.unit} · Spread = preço operação − referência bolsa em USD/MT`;
+  calcUpdate();
+}
+
+// ── Helpers ───────────────────────────────────────────────────────
+function parseN(str) {
+  if (!str) return 0;
+  return parseFloat(str.toString().replace(/\./g,'').replace(',','.')) || 0;
+}
+function fmtN(n, dec=2) {
+  return n.toLocaleString('pt-BR', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+}
+function fmtBRL(n) {
+  if (n >= 1e9) return 'R$ ' + fmtN(n/1e9,2) + ' bi';
+  if (n >= 1e6) return 'R$ ' + fmtN(n/1e6,2) + ' mi';
+  return 'R$ ' + fmtN(n,2);
+}
+function fmtUSD(n) {
+  if (n >= 1e9) return '$ ' + fmtN(n/1e9,2) + ' bi';
+  if (n >= 1e6) return '$ ' + fmtN(n/1e6,2) + ' mi';
+  return '$ ' + fmtN(n,2);
+}
+function setText(id, v) { const el=document.getElementById(id); if(el) el.textContent=v; }
+
+// ── Core calculation (always works in MT internally) ──────────────
+function calcUpdate() {
+  const c   = COMM[currentComm];
+  const raw = parseN(document.getElementById('ci-qty').value);
+  const pr  = parseN(document.getElementById('ci-price').value);
+  const fx  = parseN(document.getElementById('ci-fx').value);
+  const ref = parseN(document.getElementById('ci-ref').value);
+
+  if (!raw || !pr || !fx || !ref) return;
+
+  // 1. Resolve MT and sacas from quantity input
+  let mt, sacas;
+  if (qtyMode === 'sacas') {
+    sacas = raw;
+    mt    = sacas * c.kg / 1000;
+  } else { // 'mt'
+    mt    = raw;
+    sacas = mt * 1000 / c.kg;
+  }
+
+  // 2. Resolve USD/MT from price input
+  let usdPerMt, brlPerMt, brlPerSaca;
+  if (priceMode === 'brl_saca') {
+    brlPerSaca = pr;
+    brlPerMt   = brlPerSaca * 1000 / c.kg;
+    usdPerMt   = brlPerMt / fx;
+  } else if (priceMode === 'usd_mt') {
+    usdPerMt   = pr;
+    brlPerMt   = usdPerMt * fx;
+    brlPerSaca = brlPerMt * c.kg / 1000;
+  } else { // 'brl_mt'
+    brlPerMt   = pr;
+    usdPerMt   = brlPerMt / fx;
+    brlPerSaca = brlPerMt * c.kg / 1000;
+  }
+
+  // 3. Totals
+  const totalBRL = brlPerMt * mt;
+  const totalUSD = usdPerMt * mt;
+
+  // 4. Reference price USD/MT  (ref in ¢/unit)
+  // buKg = kg per exchange unit (bushel or lb)
+  const unitsPerMt = 1000 / c.buKg;
+  const refUsdMt   = (ref / 100) * unitsPerMt;
+  const refBrlMt   = refUsdMt * fx;
+  const refBrlSaca = refBrlMt * c.kg / 1000;
+
+  // 5. Spread in USD/MT and total
+  const spread      = usdPerMt - refUsdMt;
+  const spreadPct   = refUsdMt > 0 ? (spread / refUsdMt) * 100 : 0;
+  const spreadBrlMt = spread * fx;
+
+  // ── Qty card: always show both units ─────────────────────────────
+  if (qtyMode === 'sacas') {
+    setText('cr-primary',   fmtN(sacas, 0) + ' sacas');
+    setText('cr-secondary', fmtN(mt, 2) + ' MT');
+    setText('ci-qty-equiv', '= ' + fmtN(mt, 2) + ' MT');
+  } else {
+    setText('cr-primary',   fmtN(mt, 2) + ' MT');
+    setText('cr-secondary', fmtN(sacas, 0) + ' sacas');
+    setText('ci-qty-equiv', '= ' + fmtN(sacas, 0) + ' sacas');
+  }
+  setText('cr-kg', fmtN(mt * 1000, 0) + ' kg no total');
+
+  // ── Price equiv hint ──────────────────────────────────────────────
+  if (priceMode === 'brl_saca') {
+    setText('ci-price-equiv', '= $ ' + fmtN(usdPerMt, 2) + '/MT');
+  } else if (priceMode === 'usd_mt') {
+    setText('ci-price-equiv', '= R$ ' + fmtN(brlPerSaca, 2) + '/saca');
+  } else {
+    setText('ci-price-equiv', '= $ ' + fmtN(usdPerMt, 2) + '/MT');
+  }
+
+  // ── Total BRL ─────────────────────────────────────────────────────
+  setText('cr-brl',      fmtBRL(totalBRL));
+  setText('cr-brl-saca', 'R$ ' + fmtN(brlPerSaca, 2) + '/saca');
+  setText('cr-brl-sub',  'R$ ' + fmtN(brlPerMt, 2) + '/MT');
+
+  // ── Total USD ─────────────────────────────────────────────────────
+  setText('cr-usd',     fmtUSD(totalUSD));
+  setText('cr-usd-mt',  '$ ' + fmtN(usdPerMt, 2) + '/MT');
+  setText('cr-usd-sub', fmtN(totalUSD, 0) + ' USD');
+
+  // ── Unit price card ───────────────────────────────────────────────
+  setText('cr-usdmt', '$ ' + fmtN(usdPerMt, 2) + '/MT');
+  setText('cr-brlmt', 'R$ ' + fmtN(brlPerMt, 2) + '/MT');
+  setText('cr-brlsc', 'R$ ' + fmtN(brlPerSaca, 2) + '/saca');
+
+  // ── Ref bolsa ─────────────────────────────────────────────────────
+  setText('cr-refmt',     '$ ' + fmtN(refUsdMt, 2) + '/MT');
+  setText('cr-refbrl',    'R$ ' + fmtN(refBrlSaca, 2) + '/saca');
+  setText('cr-refmt-sub', c.exch + ' ' + fmtN(ref, 2) + ' ¢/' + c.unit);
+
+  // ── Spread card ───────────────────────────────────────────────────
+  const sign = spread >= 0 ? '+' : '';
+  setText('cr-spread',     sign + '$ ' + fmtN(Math.abs(spread), 2) + '/MT ' + (spread >= 0 ? '▲' : '▼'));
+  setText('cr-spread-brl', sign + 'R$ ' + fmtN(Math.abs(spreadBrlMt), 2) + '/MT');
+  setText('cr-spread-pct', sign + fmtN(spreadPct, 2) + '% vs. ' + c.exch);
+
+  const sc = document.getElementById('cr-spread-card');
+  sc.className = 'calc-card ' + (spread > 0.5 ? 'spread-pos' : spread < -0.5 ? 'spread-neg' : 'spread-zero');
+
+  // ── Summary bar ───────────────────────────────────────────────────
+  setText('cs-vol',    fmtN(mt, 0) + ' MT / ' + fmtN(sacas, 0) + ' sacas');
+  setText('cs-total',  fmtBRL(totalBRL) + ' · ' + fmtUSD(totalUSD));
+  setText('cs-spread', sign + '$ ' + fmtN(Math.abs(spread), 2) + '/MT (' + sign + fmtN(spreadPct, 2) + '%)');
+  setText('cs-fx',     'R$ ' + fmtN(fx, 4) + '/USD');
+}
+
+// Init
+calcUpdate();
+
+// ── ARBITRAGEM COMPARATIVA ────────────────────────────────────────
+// Reference praças/markets per commodity (BRL/saca — mock, replaced by live feed in prod)
+const PRACAS = {
+  soja: [
+    { name:'Santos FOB',      type:'export', brlSaca: 118.50 },
+    { name:'Paranaguá FOB',   type:'export', brlSaca: 117.20 },
+    { name:'Mato Grosso',     type:'inland', brlSaca: 101.80 },
+    { name:'Goiás / GO',      type:'inland', brlSaca: 104.30 },
+    { name:'Paraná / PR',     type:'inland', brlSaca: 109.60 },
+    { name:'Rio Grande / RS', type:'inland', brlSaca: 111.40 },
+    { name:'Rotterdam FOB',   type:'intl',   usdMt: 345.00 },
+    { name:'Shanghai CNF',    type:'intl',   usdMt: 352.00 },
+  ],
+  milho: [
+    { name:'Santos FOB',      type:'export', brlSaca: 62.80 },
+    { name:'Paranaguá FOB',   type:'export', brlSaca: 61.90 },
+    { name:'Mato Grosso',     type:'inland', brlSaca: 54.20 },
+    { name:'Goiás / GO',      type:'inland', brlSaca: 56.10 },
+    { name:'Paraná / PR',     type:'inland', brlSaca: 58.40 },
+    { name:'Minas Gerais',    type:'inland', brlSaca: 57.80 },
+    { name:'Rotterdam FOB',   type:'intl',   usdMt: 168.00 },
+  ],
+  cafe: [
+    { name:'Santos ESALQ',    type:'export', brlSaca: 1420.00 },
+    { name:'Minas Gerais',    type:'inland', brlSaca: 1380.00 },
+    { name:'São Paulo / SP',  type:'inland', brlSaca: 1395.00 },
+    { name:'Bahia / BA',      type:'inland', brlSaca: 1360.00 },
+    { name:'NY ICE',          type:'intl',   usdMt: 5210.00 },
+    { name:'Londres LIFFE',   type:'intl',   usdMt: 4980.00 },
+  ],
+  acucar: [
+    { name:'Santos VHP FOB',  type:'export', brlSaca: 138.00 },
+    { name:'São Paulo / SP',  type:'inland', brlSaca: 128.00 },
+    { name:'Paraná / PR',     type:'inland', brlSaca: 126.00 },
+    { name:'NY ICE No.11',    type:'intl',   usdMt: 441.00 },
+    { name:'Londres ICE W.',  type:'intl',   usdMt: 460.00 },
+  ],
+  trigo: [
+    { name:'Paranaguá FOB',   type:'export', brlSaca: 78.50 },
+    { name:'Paraná / PR',     type:'inland', brlSaca: 71.20 },
+    { name:'Rio Grande / RS', type:'inland', brlSaca: 72.80 },
+    { name:'Mato Grosso',     type:'inland', brlSaca: 68.40 },
+    { name:'Rotterdam FOB',   type:'intl',   usdMt: 205.00 },
+  ],
+};
+
+const TYPE_LABELS = { export:'PORTO', inland:'INTERIOR', intl:'INTL' };
+const TYPE_COLORS = { export:'#64C8FA', inland:'#BFBFBF', intl:'#FA8200' };
+
+let arbOpen = false;
+
+function toggleArb() {
+  arbOpen = !arbOpen;
+  const panel = document.getElementById('arb-panel');
+  const btn   = document.getElementById('arb-btn');
+  if (arbOpen) {
+    panel.style.display = 'block';
+    btn.textContent = '▲ FECHAR ARBITRAGEM';
+    renderArb();
+  } else {
+    panel.style.display = 'none';
+    btn.textContent = '⇄ ARBITRAGEM COMPARATIVA';
+  }
+}
+
+function renderArb() {
+  const c      = COMM[currentComm];
+  const fx     = parseN(document.getElementById('ci-fx').value);
+  const rawQty = parseN(document.getElementById('ci-qty').value);
+  const priceR = parseN(document.getElementById('ci-price').value);
+
+  // Resolve user's USD/MT from current mode
+  let usdPerMt;
+  if (priceMode === 'brl_saca') {
+    usdPerMt = (priceR * 1000 / c.kg) / fx;
+  } else if (priceMode === 'usd_mt') {
+    usdPerMt = priceR;
+  } else {
+    usdPerMt = priceR / fx;
+  }
+  const brlPerSaca = usdPerMt * fx * c.kg / 1000;
+
+  const pracas = PRACAS[currentComm] || [];
+  const rows = pracas.map(p => {
+    // Resolve praça USD/MT
+    let pUsdMt, pBrlSaca;
+    if (p.usdMt !== undefined) {
+      pUsdMt   = p.usdMt;
+      pBrlSaca = pUsdMt * fx * c.kg / 1000;
+    } else {
+      pBrlSaca = p.brlSaca;
+      pUsdMt   = (pBrlSaca * 1000 / c.kg) / fx;
+    }
+    const spread    = usdPerMt - pUsdMt;
+    const spreadPct = pUsdMt > 0 ? (spread / pUsdMt) * 100 : 0;
+    const spreadBrl = brlPerSaca - pBrlSaca;
+    return { ...p, pUsdMt, pBrlSaca, spread, spreadPct, spreadBrl };
+  });
+
+  // Sort by USD/MT ascending
+  rows.sort((a,b) => a.pUsdMt - b.pUsdMt);
+
+  const typeC = TYPE_COLORS;
+  let html = `
+  <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--sb50);margin-bottom:8px;padding:0 2px">
+    PRAÇA / MERCADO
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    BRL/SC &nbsp;&nbsp;&nbsp;&nbsp; USD/MT &nbsp;&nbsp;&nbsp;&nbsp; SPREAD vs. SUA OP.
+  </div>`;
+
+  rows.forEach(r => {
+    const sc  = r.spread;
+    const pct = r.spreadPct;
+    const sign = sc >= 0 ? '+' : '';
+    const col = sc > 1 ? '#329632' : sc < -1 ? '#FA3232' : '#BFBFBF';
+    const typeLabel = TYPE_LABELS[r.type] || r.type;
+    const typeColor = TYPE_COLORS[r.type] || '#888';
+    const barW = Math.min(Math.abs(pct) * 4, 60);
+    const barDir = sc >= 0 ? 'right' : 'left';
+
+    html += `
+    <div style="display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:7px;
+      margin-bottom:4px;background:#111;border:1px solid rgba(255,255,255,.06);
+      transition:border-color .15s" onmouseover="this.style.borderColor='rgba(250,130,0,.25)'"
+      onmouseout="this.style.borderColor='rgba(255,255,255,.06)'">
+
+      <span style="font-size:9px;font-weight:700;letter-spacing:.5px;color:${typeColor};
+        background:${typeColor}22;border:1px solid ${typeColor}44;
+        border-radius:3px;padding:1px 5px;white-space:nowrap;min-width:54px;text-align:center">
+        ${typeLabel}
+      </span>
+
+      <span style="flex:1;font-size:11px;font-weight:600;color:var(--sb25)">${r.name}</span>
+
+      <span style="font-size:11px;font-weight:700;color:#fff;min-width:72px;text-align:right">
+        R$ ${fmtN(r.pBrlSaca,2)}
+      </span>
+      <span style="font-size:11px;font-weight:700;color:var(--sb25);min-width:62px;text-align:right">
+        $${fmtN(r.pUsdMt,2)}
+      </span>
+
+      <span style="font-size:11px;font-weight:800;color:${col};min-width:84px;text-align:right">
+        ${sign}$${fmtN(Math.abs(sc),2)}/MT
+      </span>
+      <span style="font-size:10px;font-weight:700;color:${col};min-width:52px;text-align:right">
+        ${sign}${fmtN(pct,1)}%
+      </span>
+
+      <!-- Mini bar -->
+      <div style="width:48px;height:6px;background:#1F1F1F;border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${barW}px;background:${col};border-radius:3px;
+          ${barDir==='right' ? 'margin-left:auto' : ''}"></div>
+      </div>
+    </div>`;
+  });
+
+  // User's price row (highlighted)
+  html = `
+    <div style="display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:7px;
+      margin-bottom:8px;background:rgba(250,130,0,.09);border:1px solid rgba(250,130,0,.35)">
+      <span style="font-size:9px;font-weight:700;color:var(--so);background:rgba(250,130,0,.15);
+        border:1px solid rgba(250,130,0,.3);border-radius:3px;padding:1px 5px;min-width:54px;text-align:center">
+        SUA OP.
+      </span>
+      <span style="flex:1;font-size:11px;font-weight:700;color:var(--so)">Preço inserido</span>
+      <span style="font-size:11px;font-weight:800;color:var(--so);min-width:72px;text-align:right">
+        R$ ${fmtN(brlPerSaca,2)}
+      </span>
+      <span style="font-size:11px;font-weight:800;color:var(--so);min-width:62px;text-align:right">
+        $${fmtN(usdPerMt,2)}
+      </span>
+      <span style="font-size:11px;color:var(--sb50);min-width:84px;text-align:right">—</span>
+      <span style="min-width:52px"></span>
+      <div style="width:48px"></div>
+    </div>` + html;
+
+  document.getElementById('arb-body').innerHTML = html;
+}
+</script>
+
+<!-- Arbitrage panel (injected into modal just before footer) -->
+<script>
+(function injectArb() {
+  const footer = document.querySelector('.calc-footer');
+  if (!footer) return;
+
+  // Insert arb button + panel before footer
+  const btnDiv = document.createElement('div');
+  btnDiv.style.cssText = 'padding:0 16px 10px;';
+  btnDiv.innerHTML = `
+    <button id="arb-btn" onclick="toggleArb()" style="
+      width:100%;padding:9px 14px;
+      background:rgba(250,130,0,.07);border:1px solid rgba(250,130,0,.25);
+      border-radius:8px;color:var(--so);font-family:inherit;font-size:10px;
+      font-weight:700;letter-spacing:1px;cursor:pointer;
+      transition:background .15s,border-color .15s;text-align:center">
+      ⇄ ARBITRAGEM COMPARATIVA
+    </button>
+    <div id="arb-panel" style="display:none;margin-top:10px;
+      background:#161616;border:1px solid rgba(255,255,255,.07);
+      border-radius:9px;padding:12px;max-height:320px;overflow-y:auto">
+      <div id="arb-body"></div>
+      <div style="margin-top:8px;font-size:9px;color:var(--sb75);padding-top:6px;
+        border-top:1px solid var(--line)">
+        ⚠ Preços de praça são referências de mercado (simulação). Atualizar com feed em tempo real na versão final.
+      </div>
+    </div>
+  `;
+  footer.parentNode.insertBefore(btnDiv, footer);
+})();
+</script>

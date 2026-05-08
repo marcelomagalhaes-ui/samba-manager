@@ -1,0 +1,125 @@
+# ============================================================================
+# SAMBA EXPORT — ATLAS DE MERCADO (Master Data Management)
+# ============================================================================
+# Editável pelo time comercial. Versionado em git.
+#
+# Cada produto canônico tem:
+#   core: true  -> pasta vai para a raiz "Commodities Core"
+#   core: false -> pasta vai para a raiz "Negócios / Financeiro / Genéricos"
+#   aliases:     -> strings que podem aparecer na planilha (case/acento-insensitive)
+#   subcategories: -> cortes, variedades ou instrumentos derivados
+#
+# Regras:
+#   - aliases são comparados após normalização (lower + strip + sem acento).
+#   - nomes canônicos (chaves) mantêm acentuação e caixa — são usados nas pastas do Drive.
+#   - se um raw_name não bater em nenhum alias, o resolver devolve o texto em UPPER
+#     como fallback e roteia para a raiz de Negócios (comportamento do monolito).
+# ============================================================================
+
+products:
+
+  # ========================================================================
+  # COMMODITIES CORE (vão para SAMBA_ROOT_FOLDER_ID)
+  # ========================================================================
+
+  FRANGO:
+    core: true
+    aliases: [frango, chicken, chicken paw, chicken paws]
+    subcategories:
+      FEET:            {aliases: [feet]}
+      MID JOINT WING:  {aliases: [mjw, mid joint wing]}
+      WINGS:           {aliases: [asa, wings]}
+      BREAST:          {aliases: [peito, breast]}
+
+  BOVINOS:
+    core: true
+    aliases: [bovino, bovinos, beef, meat, carne]
+    subcategories:
+      ACÉM:        {aliases: [acem]}
+      PICANHA:     {aliases: [picanha]}
+      SIRLOIN:     {aliases: [sirloin]}
+      RIBEYE:      {aliases: [ribeye]}
+      FOREQUARTER: {aliases: [forequarter]}
+      DIANTEIRO:   {aliases: [dianteiro]}
+
+  SUÍNOS:
+    core: true
+    aliases: [porco, pork, suino, suinos]
+    subcategories:
+      BELLY: {aliases: [pork belly, barriga]}
+
+  AÇÚCAR:
+    core: true
+    aliases: [acucar, sugar]
+    subcategories:
+      IC45: {aliases: [ic45]}
+      VHP:  {aliases: [vhp]}
+
+  MILHO:
+    core: true
+    aliases: [milho, corn, maize]
+    subcategories:
+      MILHO BRANCO: {aliases: [milho branco]}
+      NON GMO:      {aliases: [milho non gmo]}
+
+  SOJA:
+    core: true
+    aliases: [soja, soy, soybean]
+    subcategories:
+      NON GMO: {aliases: [soja non gmo]}
+
+  FARELO DE SOJA:
+    core: true
+    aliases: [farelo soja, farelo de soja]
+
+  CAFÉ:
+    core: true
+    aliases: [cafe, coffee]
+
+  CACAU:
+    core: true
+    aliases: [cacau, cocoa]
+
+  ALGODÃO:
+    core: true
+    aliases: [algodao, cotton]
+
+  ARROZ:
+    core: true
+    aliases: [arroz, rice]
+
+  OURO:
+    core: true
+    aliases: [ouro, gold]
+
+  FARELO PEIXE:
+    core: true
+    aliases: [farelo peixe]
+
+  # ========================================================================
+  # GENÉRICOS / FINANCEIROS (vão para SAMBA_NEGOCIOS_FOLDER_ID)
+  # ========================================================================
+
+  FRUTAS:
+    core: false
+    aliases: [frutas, fruits]
+
+  COCO:
+    core: false
+    aliases: [coco, coconut]
+
+  CPR:
+    core: false
+    aliases: [cpr]
+
+  CRÉDITO RURAL:
+    core: false
+    aliases: [credito rural]
+
+  # "sblc" e "lc" mapeavam para o path "SBLC/DLC" no monolito — preservado aqui
+  # como subcategoria para manter o comportamento de criar DLC dentro de SBLC.
+  SBLC:
+    core: false
+    aliases: []
+    subcategories:
+      DLC: {aliases: [sblc, lc]}

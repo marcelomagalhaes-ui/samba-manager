@@ -1,0 +1,319 @@
+<!DOCTYPE html><html><body><script>
+(function(){
+  var pd=window.parent.document, pw=window.parent;
+
+  // Self-hide this iframe
+  var me=window.frameElement;
+  if(me){
+    me.style.cssText='height:0!important;border:none;overflow:hidden;display:block';
+    var w=me.closest('[data-testid="stIFrame"]');
+    if(w) w.style.cssText='height:0!important;min-height:0!important;overflow:hidden!important;margin:0!important;padding:0!important';
+  }
+
+  // ── 1. CSS (inject once) ─────────────────────────────────────────────
+  if(!pd.getElementById('fab-samba-css')){
+    var s=pd.createElement('style');
+    s.id='fab-samba-css';
+    s.textContent=[
+      // FAB sphere button
+      '#fab-calc-btn{position:fixed;bottom:28px;right:28px;width:58px;height:58px;border-radius:50%;',
+      'background:radial-gradient(circle at 38% 35%,#ffb347,#FA8200 55%,#c86000);',
+      'box-shadow:0 4px 20px rgba(250,130,0,.60),0 2px 8px rgba(0,0,0,.30);',
+      'border:none;cursor:pointer;z-index:99999;display:flex;align-items:center;justify-content:center;',
+      'font-size:22px;color:#fff;user-select:none;transition:transform .15s,box-shadow .15s;}',
+      '#fab-calc-btn:hover{transform:scale(1.10);box-shadow:0 6px 28px rgba(250,130,0,.75),0 3px 10px rgba(0,0,0,.35);}',
+      '#fab-calc-btn.fab-open{background:radial-gradient(circle at 38% 35%,#444,#222 55%,#111);box-shadow:0 4px 14px rgba(0,0,0,.50);}',
+      // Panel
+      '#fab-calc-panel{position:fixed;bottom:98px;right:28px;width:315px;max-height:82vh;',
+      'background:#111;border-radius:18px;border:1px solid #2a2a2a;',
+      'box-shadow:0 12px 40px rgba(0,0,0,.70);z-index:99998;overflow:hidden;',
+      'display:none;font-family:Montserrat,Segoe UI,sans-serif;}',
+      '#fab-calc-panel.fab-open{display:flex;flex-direction:column;animation:fabUp .20s cubic-bezier(.22,.68,0,1.2);}',
+      '@keyframes fabUp{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}',
+      // Tabs
+      '.fab-tabs{display:flex;background:#0a0a0a;border-bottom:1px solid #1a1a1a;flex-shrink:0;}',
+      '.fab-tab{flex:1;padding:9px 0;text-align:center;font-size:9px;font-weight:700;color:#444;',
+      'cursor:pointer;letter-spacing:.8px;text-transform:uppercase;border:none;background:none;',
+      'border-bottom:2px solid transparent;transition:color .1s,border-color .1s;}',
+      '.fab-tab.fab-active{color:#FA8200;border-bottom-color:#FA8200;}',
+      // Tab panels (scrollable)
+      '#fab-conv,#fab-truck{padding:14px 14px 16px;overflow-y:auto;}',
+      '#fab-conv{display:block;}#fab-truck{display:none;}',
+      // Commodity pills
+      '.fcommodity{display:flex;gap:5px;margin-bottom:12px;}',
+      '.fcpill{flex:1;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:20px;color:#555;',
+      'font-size:9px;font-weight:800;letter-spacing:.6px;padding:6px 0;text-align:center;',
+      'cursor:pointer;text-transform:uppercase;transition:all .12s;}',
+      '.fcpill.fcp-active{background:#FA8200;border-color:#FA8200;color:#fff;}',
+      '.fcpill:hover:not(.fcp-active){background:#1a1a1a;color:#888;}',
+      // Section labels
+      '.fclabel{font-size:9px;color:#444;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin:10px 0 5px;}',
+      '.fclabel:first-child{margin-top:0;}',
+      // Input rows
+      '.fcrow{display:flex;gap:7px;align-items:center;margin-bottom:6px;}',
+      '.fcinp{flex:1;background:#0a0a0a;border:1px solid #222;border-radius:7px;color:#fff;',
+      'font-size:13px;font-weight:700;padding:8px 10px;font-family:monospace;box-sizing:border-box;width:100%;}',
+      '.fcinp:focus{outline:none;border-color:#FA8200;}',
+      '.fcinp-sm{flex:0 0 72px;min-width:0;}',
+      '.fcunit{font-size:10px;color:#444;white-space:nowrap;flex-shrink:0;font-weight:600;}',
+      // Result cards grid
+      '.fcresults{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;}',
+      '.fcrescard{background:#060606;border:1px solid #1a1a1a;border-radius:10px;padding:10px 8px;text-align:center;}',
+      '.fcrval{font-size:16px;font-weight:900;color:#FA8200;font-family:monospace;line-height:1;',
+      'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+      '.fcrunit{font-size:8px;color:#444;font-weight:700;letter-spacing:.5px;margin-top:4px;text-transform:uppercase;}',
+      // Total card (full width)
+      '.fcrescard-full{background:#060606;border:1px solid #FA8200;border-radius:10px;',
+      'padding:10px 12px;text-align:center;margin-top:6px;}',
+      '.fcrval-big{font-size:20px;font-weight:900;color:#FA8200;font-family:monospace;}',
+      // Divider
+      '.fcdiv{border:none;border-top:1px solid #1a1a1a;margin:12px 0;}',
+      // Truck tab
+      '.ft-volinp-row{display:flex;gap:7px;align-items:center;margin-bottom:14px;}',
+      '.ft-sync-badge{font-size:8px;color:#FA8200;font-weight:700;letter-spacing:.5px;',
+      'background:#1a0d00;border:1px solid #3a1f00;border-radius:4px;padding:2px 5px;white-space:nowrap;}',
+      '.ft-truck{display:flex;align-items:center;gap:10px;background:#060606;border:1px solid #1a1a1a;',
+      'border-radius:10px;padding:9px 12px;margin-bottom:5px;transition:border-color .1s;}',
+      '.ft-truck:hover{border-color:#2a2a2a;}',
+      '.ft-icon{font-size:24px;line-height:1;flex-shrink:0;}',
+      '.ft-info{flex:1;min-width:0;}',
+      '.ft-name{font-size:9px;color:#555;font-weight:700;letter-spacing:.5px;text-transform:uppercase;}',
+      '.ft-cap{font-size:10px;color:#2a2a2a;font-weight:600;margin-top:1px;}',
+      '.ft-count{font-size:24px;font-weight:900;color:#FA8200;font-family:monospace;',
+      'min-width:52px;text-align:right;line-height:1;}',
+      '.ft-count small{font-size:9px;color:#444;font-weight:700;display:block;text-align:right;margin-top:2px;}',
+    ].join('');
+    pd.head.appendChild(s);
+  }
+
+  // ── 2. HTML (inject once) ────────────────────────────────────────────
+  if(!pd.getElementById('fab-calc-btn')){
+    var t=pd.createElement('div');
+    t.innerHTML=
+      '<button id="fab-calc-btn" title="Samba Converter">🧮</button>'
+      +'<div id="fab-calc-panel">'
+        // Tabs
+        +'<div class="fab-tabs">'
+          +'<button class="fab-tab fab-active" data-tab="conv">⚖️ CONVERTER</button>'
+          +'<button class="fab-tab" data-tab="truck">🚛 CAMINHÕES</button>'
+        +'</div>'
+
+        // ── CONVERTER TAB ──
+        +'<div id="fab-conv">'
+          // Commodity selector
+          +'<div class="fcommodity">'
+            +'<button class="fcpill fcp-active" data-com="soja">SOJA</button>'
+            +'<button class="fcpill" data-com="milho">MILHO</button>'
+            +'<button class="fcpill" data-com="acucar">AÇÚCAR</button>'
+          +'</div>'
+          // Volume
+          +'<div class="fclabel">VOLUME</div>'
+          +'<div class="fcrow">'
+            +'<input class="fcinp" id="fc-sacas" type="number" placeholder="Qtd. sacas" min="0">'
+            +'<span class="fcunit">sacas</span>'
+          +'</div>'
+          // Price + PTAX
+          +'<div class="fclabel">PREÇO & CÂMBIO</div>'
+          +'<div class="fcrow">'
+            +'<input class="fcinp" id="fc-brl" type="number" placeholder="R$/saca" min="0" step="0.01">'
+            +'<span class="fcunit">R$/saca</span>'
+          +'</div>'
+          +'<div class="fcrow">'
+            +'<input class="fcinp fcinp-sm" id="fc-ptax" type="number" placeholder="PTAX" value="5.70" min="0.01" step="0.01">'
+            +'<span class="fcunit">PTAX R$/US$</span>'
+          +'</div>'
+          // Results
+          +'<hr class="fcdiv">'
+          +'<div class="fcresults">'
+            +'<div class="fcrescard"><div class="fcrval" id="fc-res-mt">—</div><div class="fcrunit">Metric Tons</div></div>'
+            +'<div class="fcrescard"><div class="fcrval" id="fc-res-usd">—</div><div class="fcrunit">USD / MT</div></div>'
+          +'</div>'
+          +'<div class="fcresults">'
+            +'<div class="fcrescard"><div class="fcrval" id="fc-res-brl-mt">—</div><div class="fcrunit">R$ / MT</div></div>'
+            +'<div class="fcrescard"><div class="fcrval" id="fc-res-cbot">—</div><div class="fcrunit">¢/bu (CBOT)</div></div>'
+          +'</div>'
+          +'<div class="fcrescard-full"><div class="fcrval-big" id="fc-res-total">—</div><div class="fcrunit">Total Operação (R$)</div></div>'
+        +'</div>'
+
+        // ── TRUCK TAB ──
+        +'<div id="fab-truck">'
+          +'<div class="fclabel">VOLUME</div>'
+          +'<div class="ft-volinp-row">'
+            +'<input class="fcinp" id="ft-mt-inp" type="number" placeholder="Metric Tons" min="0" step="0.01">'
+            +'<span class="fcunit">MT</span>'
+            +'<span class="ft-sync-badge" id="ft-sync-badge" style="display:none">↑ CONV</span>'
+          +'</div>'
+          +'<div class="fclabel">CAMINHÕES NECESSÁRIOS</div>'
+          +'<div id="ft-truck-list">'
+            +'<div class="ft-truck"><span class="ft-icon">🚛</span>'
+              +'<div class="ft-info"><div class="ft-name">TRUCK 6×2</div><div class="ft-cap">18 T nominais · 17,1 T úteis</div></div>'
+              +'<div class="ft-count" id="ftc-0">—<small></small></div>'
+            +'</div>'
+            +'<div class="ft-truck"><span class="ft-icon">🚛</span>'
+              +'<div class="ft-info"><div class="ft-name">VANDERLEIA</div><div class="ft-cap">27 T nominais · 25,7 T úteis</div></div>'
+              +'<div class="ft-count" id="ftc-1">—<small></small></div>'
+            +'</div>'
+            +'<div class="ft-truck"><span class="ft-icon">🚛</span>'
+              +'<div class="ft-info"><div class="ft-name">BITREM 9 EIXOS</div><div class="ft-cap">38 T nominais · 36,1 T úteis</div></div>'
+              +'<div class="ft-count" id="ftc-2">—<small></small></div>'
+            +'</div>'
+            +'<div class="ft-truck"><span class="ft-icon">🚛</span>'
+              +'<div class="ft-info"><div class="ft-name">RODOTREM 11 EIXOS</div><div class="ft-cap">50 T nominais · 47,5 T úteis</div></div>'
+              +'<div class="ft-count" id="ftc-3">—<small></small></div>'
+            +'</div>'
+            +'<div class="ft-truck"><span class="ft-icon">🚛</span>'
+              +'<div class="ft-info"><div class="ft-name">RODOTREM ESPECIAL 74T</div><div class="ft-cap">55 T nominais · 52,3 T úteis</div></div>'
+              +'<div class="ft-count" id="ftc-4">—<small></small></div>'
+            +'</div>'
+          +'</div>'
+        +'</div>'
+      +'</div>';
+    while(t.firstChild) pd.body.appendChild(t.firstChild);
+  }
+
+  // ── 3. Logic (init once) ─────────────────────────────────────────────
+  if(!pw._fabInit){
+    pw._fabInit=true;
+
+    // Commodity: sacas/MT = 1000 kg / kg_per_saca
+    var COMMOD = {
+      soja:   { sacas_per_mt: 1000/60 },   // 16.6667
+      milho:  { sacas_per_mt: 1000/60 },   // 16.6667
+      acucar: { sacas_per_mt: 1000/50 },   // 20.0
+    };
+    var _com = 'soja';
+
+    // Truck effective payload = nominal × 0.95 (PAYLOAD_FACTOR from core/parameters.py)
+    var PF = 0.95;
+    var TRUCKS = [
+      { id:'ftc-0', nom:18, eff:18*PF },
+      { id:'ftc-1', nom:27, eff:27*PF },
+      { id:'ftc-2', nom:38, eff:38*PF },
+      { id:'ftc-3', nom:50, eff:50*PF },
+      { id:'ftc-4', nom:55, eff:55*PF },
+    ];
+
+    // Shared state
+    var _syncedMT = NaN;
+
+    // Number formatting (Brazilian locale, abbreviated for large values)
+    function fmtN(n, dec){
+      if(isNaN(n)||!isFinite(n)) return '—';
+      return n.toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+    }
+    function fmtTotal(n){
+      if(isNaN(n)||!isFinite(n)) return '—';
+      if(n>=1e9) return 'R$ '+fmtN(n/1e9,2)+'B';
+      if(n>=1e6) return 'R$ '+fmtN(n/1e6,2)+'M';
+      if(n>=1e3) return 'R$ '+fmtN(n/1e3,1)+'k';
+      return 'R$ '+fmtN(n,2);
+    }
+
+    function calc_converter(){
+      var sacas  = parseFloat(pd.getElementById('fc-sacas').value);
+      var brl_sc = parseFloat(pd.getElementById('fc-brl').value);
+      var ptax   = parseFloat(pd.getElementById('fc-ptax').value);
+      var cfg    = COMMOD[_com];
+      var spm    = cfg.sacas_per_mt;  // sacas per MT
+
+      // Volume: sacas → MT
+      var mt = isNaN(sacas) ? NaN : sacas / spm;
+      pd.getElementById('fc-res-mt').textContent = isNaN(mt) ? '—' : fmtN(mt, 2);
+
+      // BRL/MT
+      var brl_mt = isNaN(brl_sc) ? NaN : brl_sc * spm;
+      pd.getElementById('fc-res-brl-mt').textContent = isNaN(brl_mt) ? '—' : fmtN(brl_mt, 2);
+
+      // USD/MT  = BRL/MT ÷ PTAX
+      var usd_mt = (!isNaN(brl_mt) && !isNaN(ptax) && ptax>0) ? brl_mt/ptax : NaN;
+      pd.getElementById('fc-res-usd').textContent = isNaN(usd_mt) ? '—' : fmtN(usd_mt, 2);
+
+      // CBOT ¢/bu (soja only) = USD/MT ÷ 36.7437 × 100
+      // Also shown for milho with different factor (milho ≈ 39.368 bu/MT) — display for reference
+      var bu_mt  = (_com==='soja') ? 36.7437 : (_com==='milho') ? 39.368 : NaN;
+      var cbot   = (!isNaN(usd_mt) && !isNaN(bu_mt)) ? (usd_mt/bu_mt)*100 : NaN;
+      pd.getElementById('fc-res-cbot').textContent = isNaN(cbot) ? (_com==='acucar'?'N/A':'—') : fmtN(cbot,2);
+
+      // Total da operação
+      var total = (!isNaN(brl_sc) && !isNaN(sacas)) ? brl_sc*sacas : NaN;
+      pd.getElementById('fc-res-total').textContent = fmtTotal(total);
+
+      // Sync truck tab
+      _syncedMT = mt;
+      var inp = pd.getElementById('ft-mt-inp');
+      var badge = pd.getElementById('ft-sync-badge');
+      if(!isNaN(mt)){
+        inp.value = mt.toFixed(2);
+        badge.style.display='inline-block';
+        calc_trucks(mt);
+      } else {
+        badge.style.display='none';
+      }
+    }
+
+    function calc_trucks(mt){
+      var valid = !isNaN(mt) && mt>0;
+      TRUCKS.forEach(function(tk){
+        var el = pd.getElementById(tk.id);
+        if(!valid){ el.innerHTML='—<small></small>'; return; }
+        var n = Math.ceil(mt/tk.eff);
+        el.innerHTML = n+'<small>unid.</small>';
+      });
+    }
+
+    // FAB toggle
+    pd.getElementById('fab-calc-btn').addEventListener('click',function(){
+      var o=pd.getElementById('fab-calc-panel').classList.toggle('fab-open');
+      pd.getElementById('fab-calc-btn').classList.toggle('fab-open',o);
+      pd.getElementById('fab-calc-btn').innerHTML= o?'✕':'🧮';
+    });
+
+    // Tab switching
+    pd.querySelectorAll('.fab-tab').forEach(function(tab){
+      tab.addEventListener('click',function(){
+        pd.querySelectorAll('.fab-tab').forEach(function(t){t.classList.remove('fab-active');});
+        tab.classList.add('fab-active');
+        var show=tab.dataset.tab;
+        pd.getElementById('fab-conv').style.display  =(show==='conv') ?'block':'none';
+        pd.getElementById('fab-truck').style.display =(show==='truck')?'block':'none';
+      });
+    });
+
+    // Commodity pill selection
+    pd.querySelectorAll('[data-com]').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        pd.querySelectorAll('[data-com]').forEach(function(b){b.classList.remove('fcp-active');});
+        btn.classList.add('fcp-active');
+        _com=btn.dataset.com;
+        calc_converter();
+      });
+    });
+
+    // Live calc on any converter input change
+    ['fc-sacas','fc-brl','fc-ptax'].forEach(function(id){
+      pd.getElementById(id).addEventListener('input',calc_converter);
+    });
+
+    // Truck tab: manual MT input (overrides sync)
+    pd.getElementById('ft-mt-inp').addEventListener('input',function(){
+      pd.getElementById('ft-sync-badge').style.display='none';
+      calc_trucks(parseFloat(this.value));
+    });
+  }
+
+  // ── 4. Header button patch via event delegation (once) ───────────────
+  if(!pw._hdrPatched){
+    pw._hdrPatched=true;
+    pd.body.addEventListener('click',function(ev){
+      var b=ev.target.closest('.samba-hdr-btn');
+      if(!b||b.tagName!=='BUTTON') return;
+      var title=b.getAttribute('title')||'';
+      var h=null;
+      if(title==='← Portal')                h=pd.querySelector('.st-key-cd_portal_hidden button');
+      else if(title==='Gerador de Documentos') h=pd.querySelector('.st-key-cd_docs_hidden button');
+      if(h) h.click();
+    });
+  }
+
+})();
+</script></body></html>

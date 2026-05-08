@@ -1,0 +1,69 @@
+# ── Segredos e credenciais ────────────────────────────────────────────────────
+.env
+config/google_credentials.json
+config/token.json
+config/token.json.bak
+
+# ── Banco de dados local ──────────────────────────────────────────────────────
+data/samba_control.db
+data/samba_control.db-shm
+data/samba_control.db-wal
+
+# ── Caches e arquivos gerados em runtime ─────────────────────────────────────
+data/geo_alerts_cache.json
+data/translation_cache.json
+data/newsdata_exhausted.json
+data/doc_inventory_snapshot.json
+streamlit.log
+cotacoes.csv
+
+# ── Dados sensíveis e documentos internos ────────────────────────────────────
+WHATSAPP_CONVERSAS/
+DADOS/
+temp/
+data/raw/
+data/processed/
+data/sheets/
+data/knowledge/
+data/logs/
+
+# ── Arquivos de desenvolvimento ───────────────────────────────────────────────
+claude_hotlog/
+backup_codigo_*.txt
+HOTLOGGEMINI1304.txt
+HOTLOG_DOCS_LOI.md
+logo_b64.txt
+pi_check_report.txt
+extrairbackup.py
+simulate_whatsapp.py
+sync_drive_whatsapp.py
+test_drive*.py
+test_pdf*.py
+test_pi*.py
+test_sheets*.py
+"Todos os arquivos do Samba Hub.txt"
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Pastas de estrutura duplicada (artefatos) ─────────────────────────────────
+{agents,services,dashboards,tests,data}/
+{agents,services,parsers,models,config,data}/
+{raw,data}/
+{raw,processed},templates,tests,dashboards}/
+v/

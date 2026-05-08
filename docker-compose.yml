@@ -1,0 +1,93 @@
+# =====================================================================
+# docker-compose.yml - SAMBA CORE ENGINE
+# ---------------------------------------------------------------------
+# Sobe a stack completa em 4 servicos:
+#
+#   redis    - broker/backend Celery (porta 6379 exposta para debug)
+#   api      - FastAPI uvicorn (porta 8000)
+#   worker   - Celery worker (pool=prefork, consome 3 filas)
+#   beat     - Celery scheduler (enfileira sync periodica)
+#
+# Uso (Linux/Mac/WSL/Docker Desktop):
+#   docker compose up --build
+#
+# Para PROD (Railway/Render): cada plataforma roda servicos separados
+# usando o mesmo Dockerfile - este compose serve de manifesto canonico
+# do que cada container precisa (env, command, depends_on).
+#
+# Volume `data` persiste o SQLite entre rebuilds. Em PROD trocar para
+# Postgres/MySQL gerenciado e remover o volume.
+# =====================================================================
+
+services:
+
+  redis:
+    image: redis:7-alpine
+    container_name: samba_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build: .
+    container_name: samba_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      # Override do .env para que o app fale com o servico interno.
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+    command: ["uvicorn", "api.webhook:app", "--host", "0.0.0.0", "--port", "8000"]
+
+  worker:
+    build: .
+    container_name: samba_worker
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+    command:
+      - celery
+      - -A
+      - core.celery_app
+      - worker
+      - -l
+      - info
+      - -Q
+      - queue_inbound,queue_extractor,queue_sync
+
+  beat:
+    build: .
+    container_name: samba_beat
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+    command:
+      - celery
+      - -A
+      - core.celery_app
+      - beat
+      - -l
+      - info
