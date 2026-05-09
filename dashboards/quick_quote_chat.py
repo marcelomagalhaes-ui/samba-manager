@@ -451,19 +451,28 @@ def _calcular_quick_quote(parsed: dict, snap: dict) -> dict | None:
                 fr = _calcular_frete_maritimo(
                     porto_code, dest_label, volume_mt, navio_key, bunker, hire_mkt
                 )
-                frete_mt  = fr["freight_per_mt"]
+
+                # ── Granel: usa apenas custo de ida (sem lastro de retorno).
+                # ── Container: mantém freight_per_mt (ida + lastro — preço fechado
+                #    de mercado já embute retorno). Detectado pelo nome do navio.
+                is_container = "container" in (navio_key or "").lower() or \
+                               "feeder" in (navio_key or "").lower()
+                frete_mt = fr["freight_per_mt"] if is_container \
+                           else fr["freight_min_per_mt"]
+
                 # Seguro: 0,3% × 110% × CFR
                 cfr = stack["fob_usd"] + frete_mt
                 seg = round(cfr * 1.10 * 0.003, 2)
                 cif = round(cfr + seg, 2)
                 result.update({
-                    "cfr_usd":     round(cfr, 2),
-                    "cif_usd":     cif,
-                    "frete_mt":    frete_mt,
-                    "seguro_mt":   seg,
-                    "dist_nm":     fr["dist_nm"],
+                    "cfr_usd":      round(cfr, 2),
+                    "cif_usd":      cif,
+                    "frete_mt":     frete_mt,
+                    "seguro_mt":    seg,
+                    "dist_nm":      fr["dist_nm"],
                     "transit_days": round(fr["sea_days"], 0),
-                    "navio_key":   navio_key,
+                    "navio_key":    navio_key,
+                    "is_container": is_container,
                 })
 
     return result
@@ -507,7 +516,10 @@ def _render_quote_response(r: dict):
         ("FOB " + porto, f"$ {r['fob_usd']:,.2f} / MT"),
     ]
     if r["frete_mt"]:
-        linhas.append(("Frete marítimo", f"$ {r['frete_mt']:,.2f} / MT"))
+        # Rótulo diferencia granel (somente ida) de container (com lastro embutido)
+        _is_ctn = r.get("is_container", False)
+        _fr_lbl = "Frete marítimo (container)" if _is_ctn else "Frete marítimo (viagem ida)"
+        linhas.append((_fr_lbl, f"$ {r['frete_mt']:,.2f} / MT"))
     if r["seguro_mt"]:
         linhas.append(("Seguro (0,3% × 110% CFR)", f"$ {r['seguro_mt']:,.2f} / MT"))
     if r["cfr_usd"]:
@@ -527,10 +539,13 @@ def _render_quote_response(r: dict):
     # info extra (rota)
     rota_html = ""
     if r["dist_nm"]:
-        navio_short = (r["navio_key"] or "").split("(")[0].strip()
+        navio_short  = (r["navio_key"] or "").split("(")[0].strip()
+        _is_ctn      = r.get("is_container", False)
+        _base_label  = "container" if _is_ctn else "granel · somente ida"
         rota_html = (
             f'<div style="font-size:10px;color:#9CA3AF;margin-top:8px;font-family:Montserrat,sans-serif">'
-            f'{porto} → {dest} · {r["dist_nm"]:,} NM · {int(r["transit_days"])} dias · {navio_short}'
+            f'{porto} → {dest} &nbsp;·&nbsp; {r["dist_nm"]:,} NM &nbsp;·&nbsp; '
+            f'{int(r["transit_days"])} dias &nbsp;·&nbsp; {navio_short} &nbsp;·&nbsp; {_base_label}'
             f'</div>'
         )
 
