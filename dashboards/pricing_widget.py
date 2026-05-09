@@ -975,6 +975,21 @@ def _render_cif(snap: dict, resultado: dict, porto_code: str,
 # ─────────────────────────────────────────────────────────────────────────────
 
 def render_pricing_tab():
+    # ── sub-tabs: Quick Quote (chat) + Calculadora (form completo) ───────────
+    tab_qq, tab_calc = st.tabs(["Cotacao Rapida", "Calculadora Detalhada"])
+
+    with tab_qq:
+        try:
+            from dashboards.quick_quote_chat import render_quick_quote
+            render_quick_quote()
+        except Exception as _e:
+            st.error(f"Quick Quote indisponivel: {_e}")
+
+    with tab_calc:
+        _render_calculadora()
+
+
+def _render_calculadora():
     st.markdown(
         '<div class="section-title">PREÇO EXW / FOB / CIF — CONSULTA DE MERCADO</div>',
         unsafe_allow_html=True,
