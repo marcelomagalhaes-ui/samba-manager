@@ -158,39 +158,95 @@ _PORTO_MAX_DWT = {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# DISTÂNCIAS MARÍTIMAS — novas_rotas_maritimas.csv (rota mais curta por destino)
-# Bases: SANTOS / PARANAGUA / RIO_GRANDE / VITORIA / ITAQUI / BARCARENA / PECEM
-# Derivados: estimativa geográfica para demais portos
+# DISTÂNCIAS MARÍTIMAS — fonte: tb_core_global_ports_agro_modelA_v1.csv
+# Rota ótima: Suez (Ásia/OM/África/Europa), Panama (Américas), direto (vizinhos)
+# 28 destinos × 7 portos base — dados reais do sistema anterior Samba Limpo
+# Arco Norte (Barcarena/Itaqui/Outeiro) com distâncias precisas do CSV.
 # ─────────────────────────────────────────────────────────────────────────────
 _DIST_BASE = {
     # porto_csv_code → {destino_zone → dist_nm}
     "SANTOS": {
-        "China": 11000, "Vietna": 10750, "Indonesia": 10950, "India": 8300,
-        "OME": 7200, "Europa": 5600, "Egito": 5400, "Africa": 4400, "EUA": 4000,
+        # ÁSIA (via Suez)
+        "China_N": 11000, "China_S": 10850, "Vietnam": 10900, "Indonesia": 11100,
+        "India_W":  8500, "India_E":  9000,  "Korea": 11100, "Japan":   11350,
+        "Malaysia": 10250,"Thailand": 10850, "Singapore": 10000,"SriLanka":8800,
+        # ORIENTE MÉDIO
+        "Jeddah":   6500, "Dubai":    7200,
+        # ÁFRICA
+        "Egypt":    5400, "Morocco":  4100,  "Nigeria":  3900, "Ghana":   3700, "SAfrika": 4600,
+        # EUROPA
+        "Rotterdam":5600, "Valencia": 4900,  "Piraeus":  6000,
+        # AMÉRICAS (via Panama)
+        "USA_Gulf": 3800, "USA_East": 4500,  "Canada":   6200, "Mexico":  3600, "Argentina": 1200, "Chile": 5100,
     },
     "PARANAGUA": {
-        "China": 11150, "Vietna": 10900, "Indonesia": 11100, "India": 8450,
-        "OME": 7350, "Europa": 5750, "Egito": 5550, "Africa": 4550, "EUA": 4150,
+        "China_N": 11150, "China_S": 11000, "Vietnam": 11050, "Indonesia": 11250,
+        "India_W":  8650, "India_E":  9150, "Korea":   11250, "Japan":   11500,
+        "Malaysia": 10400,"Thailand": 11000, "Singapore": 10150,"SriLanka":8950,
+        "Jeddah":   6650, "Dubai":    7350,
+        "Egypt":    5550, "Morocco":  4250, "Nigeria":  4050, "Ghana":   3850, "SAfrika": 4750,
+        "Rotterdam":5750, "Valencia": 5050, "Piraeus":  6150,
+        "USA_Gulf": 3950, "USA_East": 4650, "Canada":   6350, "Mexico":  3750, "Argentina": 1350, "Chile": 5250,
     },
     "RIO_GRANDE": {
-        "China": 11300, "Vietna": 11050, "Indonesia": 11250, "India": 8800,
-        "OME": 7500, "Europa": 5900, "Egito": 5700, "Africa": 4700, "EUA": 4300,
+        "China_N": 11350, "China_S": 11150, "Vietnam": 11250, "Indonesia": 11400,
+        "India_W":  9000, "India_E":  9500, "Korea":   11400, "Japan":   11650,
+        "Malaysia": 10650,"Thailand": 11150, "Singapore": 10350,"SriLanka":9300,
+        "Jeddah":   6800, "Dubai":    7500,
+        "Egypt":    5700, "Morocco":  4400, "Nigeria":  4200, "Ghana":   4000, "SAfrika": 4900,
+        "Rotterdam":5900, "Valencia": 5200, "Piraeus":  6300,
+        "USA_Gulf": 4100, "USA_East": 4800, "Canada":   6500, "Mexico":  3900, "Argentina": 1500, "Chile": 5400,
     },
     "VITORIA": {
-        "China": 10550, "Vietna": 10300, "Indonesia": 10550, "India": 8000,
-        "OME": 6900, "Europa": 5300, "Egito": 5100, "Africa": 4100, "EUA": 3700,
+        "China_N": 10600, "China_S": 10400, "Vietnam": 10450, "Indonesia": 10700,
+        "India_W":  8200, "India_E":  8700, "Korea":   10700, "Japan":   10900,
+        "Malaysia":  9850,"Thailand": 10400, "Singapore": 9600, "SriLanka":8500,
+        "Jeddah":   6200, "Dubai":    6900,
+        "Egypt":    5100, "Morocco":  3800, "Nigeria":  3600, "Ghana":   3400, "SAfrika": 4300,
+        "Rotterdam":5300, "Valencia": 4600, "Piraeus":  5700,
+        "USA_Gulf": 3500, "USA_East": 4200, "Canada":   5900, "Mexico":  3300, "Argentina": 1100, "Chile": 4800,
     },
     "ITAQUI": {
-        "China": 10350, "Vietna": 10100, "Indonesia": 10300, "India": 7600,
-        "OME": 6600, "Europa": 5000, "Egito": 4800, "Africa": 3800, "EUA": 3400,
+        # ÁSIA (via Suez) — ~200 NM mais perto que Santos
+        "China_N": 10350, "China_S": 10200, "Vietnam": 10250, "Indonesia": 10450,
+        "India_W": 7800,  "India_E": 8300,  "Korea": 10450, "Japan": 10700,
+        "Malaysia": 9600, "Thailand": 10200,"Singapore": 9350,"SriLanka": 8100,
+        # ORIENTE MÉDIO
+        "Jeddah": 5900,   "Dubai": 6600,
+        # ÁFRICA
+        "Egypt":  4800,   "Morocco": 3500, "Nigeria": 3200, "Ghana": 3000, "SAfrika": 4000,
+        # EUROPA
+        "Rotterdam": 5000,"Valencia": 4300,"Piraeus": 5400,
+        # AMÉRICAS
+        "USA_Gulf": 3200, "USA_East": 4000,"Canada": 5600, "Mexico": 3000, "Argentina": 2400, "Chile": 4500,
     },
     "BARCARENA": {
-        "China": 10300, "Vietna": 10050, "Indonesia": 10250, "India": 7550,
-        "OME": 6650, "Europa": 5050, "Egito": 4850, "Africa": 3750, "EUA": 3300,
+        # ÁSIA — dados reais do CSV (tb_core_global_ports_agro_modelA_v1)
+        "China_N": 10400, "China_S": 10250, "Vietnam": 10300, "Indonesia": 10500,
+        "India_W": 7850,  "India_E": 8350,  "Korea": 10500, "Japan": 10750,
+        "Malaysia": 9650, "Thailand": 10250,"Singapore": 9400,"SriLanka": 8150,
+        # ORIENTE MÉDIO
+        "Jeddah": 5950,   "Dubai": 6650,
+        # ÁFRICA
+        "Egypt":  4850,   "Morocco": 3550, "Nigeria": 3250, "Ghana": 3050, "SAfrika": 4050,
+        # EUROPA
+        "Rotterdam": 5050,"Valencia": 4350,"Piraeus": 5450,
+        # AMÉRICAS (via Panama — dados reais CSV)
+        "USA_Gulf": 3100, "USA_East": 3900,"Canada": 5500, "Mexico": 2900, "Argentina": 2300, "Chile": 4400,
     },
     "PECEM": {
-        "China": 10000, "Vietna": 9700, "Indonesia": 9950, "India": 7300,
-        "OME": 6400, "Europa": 4800, "Egito": 4600, "Africa": 3550, "EUA": 3100,
+        # ÁSIA
+        "China_N": 10000, "China_S":  9850, "Vietnam":  9700, "Indonesia":  9950,
+        "India_W": 7300,  "India_E":  8050,  "Korea": 10150, "Japan": 10400,
+        "Malaysia": 9300, "Thailand":  9900,"Singapore": 9050,"SriLanka": 7850,
+        # ORIENTE MÉDIO
+        "Jeddah": 5550,   "Dubai": 6250,
+        # ÁFRICA
+        "Egypt":  4450,   "Morocco": 3150, "Nigeria": 2950, "Ghana": 2750, "SAfrika": 3650,
+        # EUROPA
+        "Rotterdam": 4650,"Valencia": 3950,"Piraeus": 5050,
+        # AMÉRICAS
+        "USA_Gulf": 2800, "USA_East": 3500,"Canada": 5100, "Mexico": 2600, "Argentina": 2750, "Chile": 4100,
     },
 }
 
@@ -214,17 +270,42 @@ _PORTO_DIST_MAP = {
     "PECEM":             ("PECEM",       0),
 }
 
-# Destino CIF label → chave interna
+# Destino CIF label → chave interna do _DIST_BASE
+# 28 destinos com dados reais do CSV Samba Limpo (tb_core_global_ports_agro_modelA_v1)
 _DEST_KEYS = {
-    "China":              "China",
-    "Vietnã":             "Vietna",
-    "Indonésia":          "Indonesia",
-    "Índia":              "India",
-    "Oriente Médio":      "OME",
-    "Europa NW":          "Europa",
-    "Egito / N. África":  "Egito",
-    "África Subsaariana": "Africa",
-    "EUA / Golfo":        "EUA",
+    # ── ÁSIA ──────────────────────────────────────────────────────
+    "China — Shanghai / Norte":     "China_N",
+    "China — Guangzhou / Sul":      "China_S",
+    "Vietnã — Ho Chi Minh":         "Vietnam",
+    "Indonésia — Jakarta":          "Indonesia",
+    "Índia — Mundra / Kandla":      "India_W",
+    "Índia — Chennai / Leste":      "India_E",
+    "Coreia do Sul — Busan":        "Korea",
+    "Japão — Yokohama":             "Japan",
+    "Malásia — Port Klang":         "Malaysia",
+    "Tailândia — Laem Chabang":     "Thailand",
+    "Singapura":                    "Singapore",
+    "Sri Lanka — Colombo":          "SriLanka",
+    # ── ORIENTE MÉDIO ─────────────────────────────────────────────
+    "Arábia Saudita — Jeddah":      "Jeddah",
+    "Golfo Pérsico — Dubai / EAU":  "Dubai",
+    # ── ÁFRICA ────────────────────────────────────────────────────
+    "Egito — Alexandria":           "Egypt",
+    "Marrocos — Tânger":            "Morocco",
+    "Nigéria — Lagos":              "Nigeria",
+    "Gana — Tema":                  "Ghana",
+    "África do Sul — Durban":       "SAfrika",
+    # ── EUROPA ────────────────────────────────────────────────────
+    "Europa NW — Rotterdam":        "Rotterdam",
+    "Mediterrâneo — Valencia":      "Valencia",
+    "Grécia — Pireu":               "Piraeus",
+    # ── AMÉRICAS ──────────────────────────────────────────────────
+    "EUA — Golfo (New Orleans)":    "USA_Gulf",
+    "EUA — Costa Leste (Norfolk)":  "USA_East",
+    "Canadá — Vancouver":           "Canada",
+    "México — Veracruz":            "Mexico",
+    "Argentina — Rosário":          "Argentina",
+    "Chile — San Antonio":          "Chile",
 }
 
 _DESTINOS_CIF = list(_DEST_KEYS.keys())
@@ -252,15 +333,19 @@ _LOAD_RATES = {
 
 # Taxas de descarga padrão por destino (t/dia)
 _DISCH_RATES = {
-    "China":              20_000,
-    "Vietnã":             15_000,
-    "Indonésia":          15_000,
-    "Índia":              18_000,
-    "Oriente Médio":      15_000,
-    "Europa NW":          25_000,
-    "Egito / N. África":  15_000,
-    "África Subsaariana": 12_000,
-    "EUA / Golfo":        25_000,
+    "China_N":    20_000,  "China_S":    20_000,
+    "Vietnam":    15_000,  "Indonesia":  15_000,
+    "India_W":    18_000,  "India_E":    16_000,
+    "Korea":      20_000,  "Japan":      20_000,
+    "Malaysia":   15_000,  "Thailand":   15_000,
+    "Singapore":  18_000,  "SriLanka":   12_000,
+    "Jeddah":     15_000,  "Dubai":      15_000,
+    "Egypt":      15_000,  "Morocco":    12_000,
+    "Nigeria":    10_000,  "Ghana":      10_000,  "SAfrika":  18_000,
+    "Rotterdam":  25_000,  "Valencia":   18_000,  "Piraeus":  15_000,
+    "USA_Gulf":   25_000,  "USA_East":   22_000,
+    "Canada":     20_000,  "Mexico":     15_000,
+    "Argentina":  20_000,  "Chile":      15_000,
 }
 
 # PDA (Port Disbursement Account) em USD/MT de carga
@@ -283,15 +368,19 @@ _PDA_LOAD = {   # origem Brasil
 }
 
 _PDA_DISCH = {  # destino
-    "China":              0.70,
-    "Vietnã":             0.55,
-    "Indonésia":          0.55,
-    "Índia":              0.60,
-    "Oriente Médio":      0.45,
-    "Europa NW":          0.60,
-    "Egito / N. África":  0.50,
-    "África Subsaariana": 0.45,
-    "EUA / Golfo":        0.65,
+    "China_N":   0.70,  "China_S":   0.70,
+    "Vietnam":   0.55,  "Indonesia": 0.55,
+    "India_W":   0.60,  "India_E":   0.60,
+    "Korea":     0.65,  "Japan":     0.65,
+    "Malaysia":  0.50,  "Thailand":  0.50,
+    "Singapore": 0.55,  "SriLanka":  0.45,
+    "Jeddah":    0.45,  "Dubai":     0.50,
+    "Egypt":     0.50,  "Morocco":   0.45,
+    "Nigeria":   0.40,  "Ghana":     0.40,  "SAfrika":  0.55,
+    "Rotterdam": 0.60,  "Valencia":  0.55,  "Piraeus":  0.55,
+    "USA_Gulf":  0.65,  "USA_East":  0.65,
+    "Canada":    0.60,  "Mexico":    0.50,
+    "Argentina": 0.55,  "Chile":     0.50,
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -353,6 +442,20 @@ _CONGESTION_ORIGIN = {
 
 # Dias de espera em fundeio — destino (PortCongestionService)
 _CONGESTION_DEST = {
+    "China_N":   4.0,  "China_S":   3.5,
+    "Vietnam":   3.0,  "Indonesia": 3.0,
+    "India_W":   2.5,  "India_E":   2.5,
+    "Korea":     2.0,  "Japan":     1.5,
+    "Malaysia":  2.0,  "Thailand":  2.5,
+    "Singapore": 1.5,  "SriLanka":  2.0,
+    "Jeddah":    2.0,  "Dubai":     2.5,
+    "Egypt":     3.0,  "Morocco":   2.0,
+    "Nigeria":   4.0,  "Ghana":     3.5,  "SAfrika":  2.0,
+    "Rotterdam": 1.5,  "Valencia":  2.0,  "Piraeus":  2.5,
+    "USA_Gulf":  2.0,  "USA_East":  1.5,
+    "Canada":    1.5,  "Mexico":    2.0,
+    "Argentina": 2.5,  "Chile":     2.0,
+    # legado (fallback) ────────────────────────────────────────────
     "China":              4.0,
     "Vietnã":             3.0,
     "Indonésia":          3.0,
