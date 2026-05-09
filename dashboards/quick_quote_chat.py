@@ -718,6 +718,8 @@ def render_quick_quote():
         st.session_state.qq_pending_result = None
     if "qq_msg_copiada" not in st.session_state:
         st.session_state.qq_msg_copiada = False
+    if "qq_input_counter" not in st.session_state:
+        st.session_state.qq_input_counter = 0
 
     snap = _get_snapshot()
 
@@ -785,13 +787,17 @@ def render_quick_quote():
                 )
 
     # ── Input — text_input + button (mais estável que st.form em tabs) ─────────
+    # Usamos chave dinâmica baseada em contador para poder "limpar" o campo
+    # sem conflito com o Streamlit (não é permitido setar session_state[key]
+    # após o widget com aquela key ter sido instanciado na mesma execução).
+    _input_key = f"qq_input_{st.session_state.qq_input_counter}"
     col_inp, col_btn = st.columns([5, 1])
     with col_inp:
         user_input = st.text_input(
             "Sua consulta",
             placeholder='Ex: "Soja CIF Vietnam 25000 MT" ou "Acucar IC45 FOB Santos"',
             label_visibility="collapsed",
-            key="qq_input_text",
+            key=_input_key,
         )
     with col_btn:
         enviado = st.button("Calcular", key="qq_btn_calcular", use_container_width=True)
@@ -803,7 +809,8 @@ def render_quick_quote():
     if _processar:
         texto = _texto_atual
         st.session_state.qq_history.append({"role": "user", "content": texto, "result": None})
-        st.session_state.qq_input_text = ""   # limpa o campo
+        # Incrementar o contador força uma nova key no próximo rerun → campo limpo
+        st.session_state.qq_input_counter += 1
 
         with st.spinner("Calculando..."):
             try:
