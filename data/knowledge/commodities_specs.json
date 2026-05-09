@@ -1,0 +1,574 @@
+{
+  "_meta": {
+    "version": "2.0.0",
+    "updated": "2026-04-22",
+    "sources": [
+      "Incoterms 2020 (ICC Publication No. 723)",
+      "UCP 600 (ICC Publication No. 600)",
+      "GAFTA Contract 100 (Soybean, Corn)",
+      "ANEC — Associacao Nacional dos Exportadores de Cereais",
+      "FOSFA International — Fats, Oils and Oilseeds Contract",
+      "ISO 2859 Sampling Procedures",
+      "Samba Export FCO Modelo Rokane (2026-04-17)",
+      "MAPA — Ministerio da Agricultura Pecuaria e Abastecimento",
+      "SGS — Inspection Standards Reference",
+      "20260419_SE_Soybean_Mexico.pdf — Samba Export Pitch Book",
+      "20260419_SE_Soybean_China.pdf — Samba Export Pitch Book",
+      "20260419_SE_Soybean_Thailand.pdf — Samba Export Pitch Book",
+      "SE_Soybean_China_2026 (PPTX) — Start Commodities China Intelligence",
+      "SCO_ROKA_YELLOW_CORN_PetroVietnam.pdf — Rokane SCO",
+      "COMPRADORES_MEXICO_2026_500kMT.gdoc — Roteiro comercial 20 compradores"
+    ],
+    "description": "Ground truth de especificacoes de commodities para auditoria documental. v2.0 enriquecido com precos CIF reais por destino (Abril 2026, base CBOT Maio 26), logistica Arco Norte vs Santos, inteligencia de mercado e lista de compradores Mexico."
+  },
+
+  "precos_cif_soja_gmo_abril2026": {
+    "_nota": "Precos indicativos base CBOT Maio 2026 + frete atual. Preco final fixado na assinatura do contrato. Termos GAFTA/FOSFA.",
+    "_data_referencia": "Abril 2026",
+    "_base_cbot": "CBOT Maio 2026 (subindo +7,8% no ultimo mes)",
+    "mexico": {
+      "portos": ["Veracruz", "Altamira", "Tampico", "Manzanillo", "Progreso"],
+      "tabela": [
+        {"volume_mensal_mt": 1000,   "volume_anual_mt": 12000,   "navio": "Container",           "preco_cif_usd_mt": 570},
+        {"volume_mensal_mt": 2000,   "volume_anual_mt": 24000,   "navio": "Container",           "preco_cif_usd_mt": 550},
+        {"volume_mensal_mt": 12500,  "volume_anual_mt": 150000,  "navio": "Handymax/Supramax",   "preco_cif_usd_mt": 525},
+        {"volume_mensal_mt": 25000,  "volume_anual_mt": 300000,  "navio": "Handymax/Supramax",   "preco_cif_usd_mt": 515},
+        {"volume_mensal_mt": 50000,  "volume_anual_mt": 600000,  "navio": "Panamax",             "preco_cif_usd_mt": 500},
+        {"volume_mensal_mt": 100000, "volume_anual_mt": 1200000, "navio": "Panamax",             "preco_cif_usd_mt": 485, "melhor_valor": true}
+      ],
+      "vantagem_vs_usa_pct": 6.0
+    },
+    "china": {
+      "portos": ["Qingdao", "Tianjin", "Guangzhou", "Ningbo", "Dalian", "Zhanjiang"],
+      "tabela": [
+        {"volume_mensal_mt": 1000,   "volume_anual_mt": 12000,   "navio": "Container",           "preco_cif_usd_mt": 580},
+        {"volume_mensal_mt": 2000,   "volume_anual_mt": 24000,   "navio": "Container",           "preco_cif_usd_mt": 560},
+        {"volume_mensal_mt": 12500,  "volume_anual_mt": 150000,  "navio": "Handymax/Supramax",   "preco_cif_usd_mt": 535},
+        {"volume_mensal_mt": 25000,  "volume_anual_mt": 300000,  "navio": "Handymax/Supramax",   "preco_cif_usd_mt": 525},
+        {"volume_mensal_mt": 50000,  "volume_anual_mt": 600000,  "navio": "Panamax",             "preco_cif_usd_mt": 510},
+        {"volume_mensal_mt": 100000, "volume_anual_mt": 1200000, "navio": "Panamax",             "preco_cif_usd_mt": 495, "melhor_valor": true}
+      ],
+      "preco_mercado_2025_usd_mt": 452,
+      "preco_usa_cif_2025_usd_mt": 500,
+      "diferencial_brasil_vs_usa_usd_mt": -48,
+      "tarifa_importacao_brasil_pct": 3,
+      "tarifa_importacao_usa_pct": 13
+    },
+    "tailandia": {
+      "portos": ["Laem Chabang", "Bangkok Area", "Map Ta Phut"],
+      "tabela": [
+        {"volume_mensal_mt": 1000,   "volume_anual_mt": 12000,   "navio": "Container",           "preco_cif_usd_mt": 580},
+        {"volume_mensal_mt": 2000,   "volume_anual_mt": 24000,   "navio": "Container",           "preco_cif_usd_mt": 560},
+        {"volume_mensal_mt": 12500,  "volume_anual_mt": 150000,  "navio": "Handymax/Supramax",   "preco_cif_usd_mt": 535},
+        {"volume_mensal_mt": 25000,  "volume_anual_mt": 300000,  "navio": "Handymax/Supramax",   "preco_cif_usd_mt": 525},
+        {"volume_mensal_mt": 50000,  "volume_anual_mt": 600000,  "navio": "Panamax",             "preco_cif_usd_mt": 510},
+        {"volume_mensal_mt": 100000, "volume_anual_mt": 1200000, "navio": "Panamax",             "preco_cif_usd_mt": 495, "melhor_valor": true}
+      ],
+      "preco_comparativo_usa_usd_mt": "505-520",
+      "preco_comparativo_argentina_usd_mt": "515-535"
+    }
+  },
+
+  "precos_cif_milho_amarelo_abril2026": {
+    "_nota": "Baseado em SCO Rokane para PetroVietnam, Abril 2026",
+    "vietnam": {
+      "porto": "Phu My Port (VNPHU) / Vietnam Port",
+      "transacoes": [
+        {"quantidade_mt": 25000,  "preco_cif_usd_mt": 230, "tipo": "spot", "pagamento": "LC Top 50 90 dias"},
+        {"quantidade_mt": 360000, "preco_cif_usd_mt": 241, "tipo": "anual 12x30000MT", "pagamento": "LC sight Top 50"}
+      ]
+    }
+  },
+
+  "logistica_transit_times": {
+    "_nota": "Tempos de transito em dias. Fonte: pitch books Samba Export Abril 2026.",
+    "arco_norte": {
+      "portos": ["Itaqui (Sao Luis/MA)", "Outeiro-Belem (PA)"],
+      "caracteristicas": "Terminal proprio Outeiro — zero demurrage. Hub multimodal rodoviario+ferroviario+fluvial.",
+      "destinos": {
+        "mexico_golfo": {"portos": ["Veracruz", "Altamira", "Tampico"], "dias_min": 10, "dias_max": 16},
+        "mexico_pacifico": {"portos": ["Manzanillo"], "dias_min": 15, "dias_max": 22},
+        "mexico_progreso": {"portos": ["Progreso"], "dias_min": 11, "dias_max": 17},
+        "china_norte": {"portos": ["Qingdao", "Tianjin", "Dalian"], "dias_min": 28, "dias_max": 35},
+        "china_sul": {"portos": ["Guangzhou", "Zhanjiang"], "dias_min": 30, "dias_max": 37},
+        "china_leste": {"portos": ["Ningbo", "Shanghai"], "dias_min": 29, "dias_max": 36},
+        "tailandia_laem_chabang": {"portos": ["Laem Chabang"], "dias_min": 32, "dias_max": 42},
+        "tailandia_bangkok": {"portos": ["Bangkok Area"], "dias_min": 30, "dias_max": 36},
+        "tailandia_map_ta_phut": {"portos": ["Map Ta Phut"], "dias_min": 29, "dias_max": 35},
+        "vietnam": {"portos": ["Ho Chi Minh City", "Phu My"], "dias_min": 35, "dias_max": 45}
+      },
+      "frete_usd_mt": {"china": "40-55", "tailandia": "45-65"}
+    },
+    "santos_paranagua": {
+      "portos": ["Santos/SP", "Paranagua/PR"],
+      "caracteristicas": "Maior complexo portuario AL. Alternativa para granel e containers.",
+      "destinos": {
+        "mexico_golfo": {"portos": ["Veracruz", "Altamira", "Tampico"], "dias_min": 20, "dias_max": 26},
+        "mexico_pacifico": {"portos": ["Manzanillo"], "dias_min": 24, "dias_max": 32},
+        "mexico_progreso": {"portos": ["Progreso"], "dias_min": 22, "dias_max": 28},
+        "china_norte": {"portos": ["Qingdao", "Tianjin", "Dalian"], "dias_min": 38, "dias_max": 45},
+        "china_sul": {"portos": ["Guangzhou", "Zhanjiang"], "dias_min": 40, "dias_max": 48},
+        "china_leste": {"portos": ["Ningbo", "Shanghai"], "dias_min": 38, "dias_max": 46},
+        "tailandia_laem_chabang": {"portos": ["Laem Chabang"], "dias_min": 38, "dias_max": 45},
+        "tailandia_bangkok": {"portos": ["Bangkok Area"], "dias_min": 39, "dias_max": 46},
+        "tailandia_map_ta_phut": {"portos": ["Map Ta Phut"], "dias_min": 38, "dias_max": 45}
+      }
+    },
+    "vantagem_arco_norte_dias": {
+      "vs_mexico_golfo": "8-10 dias mais rapido",
+      "vs_china": "7-10 dias mais rapido",
+      "vs_tailandia": "6-9 dias mais rapido"
+    }
+  },
+
+  "inteligencia_mercado": {
+    "china_soja_2025": {
+      "importacoes_totais_mt": 111800000,
+      "participacao_brasil_pct": 73.6,
+      "volume_brasil_mt": 82330000,
+      "crescimento_brasil_pct": 10.3,
+      "participacao_usa_pct": 15.0,
+      "volume_usa_mt": 16800000,
+      "crescimento_usa_pct": -24.1,
+      "projecao_2025_26_crescimento_pct": "3-5",
+      "compradores_chave": ["COFCO", "Sinograin", "SDIC Agri", "Jiusan Group", "Dongling",
+        "Hopefull", "Dalian Huanong", "Shandong Bohai",
+        "Louis Dreyfus", "Cargill", "ADM", "Bunge", "Wilmar International"]
+    },
+    "mexico_soja_2025_26": {
+      "importacoes_anuais_mt": 7000000,
+      "crescimento_projetado_pct": 8,
+      "participacao_usa_pct": 90,
+      "vantagem_preco_brasil_vs_usa_pct": 6,
+      "compradores_chave_tier_a": ["Bunge Mexico", "Cargill Mexico", "ADM Mexico",
+        "ProPac (Proteinas del Pacifico)", "Bachoco", "Pilgrim's Pride Mexico", "Tyson Mexico"],
+      "portos_principais": ["Veracruz", "Altamira", "Tampico", "Manzanillo", "Progreso"],
+      "regulatoria": "SAGARPA/SENASICA — todos os eventos GMO aprovados"
+    },
+    "tailandia_soja_2025_26": {
+      "importacoes_anuais_mt": 3800000,
+      "participacao_brasil_pct": "84-90",
+      "uso": {"racao_pct": 75, "oleo_pct": 18, "alimentos_pct": 7},
+      "sistema_importadores": "16 Importadores Licenciados (framework WTO quota Thai MoAC)",
+      "compradores_chave": ["TVO (Thai Vegetable Oil)", "Thanakorn",
+        "CPF (Charoen Pokphand Foods)", "Betagro"],
+      "dominancia_tvo_thanakorn_pct": 65,
+      "regulatoria": "Thai MoAC — todos os eventos GMO aprovados"
+    }
+  },
+
+  "commodities": {
+
+    "soja_gmo": {
+      "nome_comercial": "Soybeans GMO Grade A",
+      "nome_ptbr": "Soja em Grao (GMO)",
+      "codigos": ["HS 1201.90.00", "CBOT ZS"],
+      "unidades_padrao": ["MT", "ton", "bushel"],
+      "incoterms_permitidos": ["CIF", "FOB", "CFR"],
+      "incoterms_preferencial": "CIF",
+      "destinos_tipicos": ["China", "Japao", "Coreia do Sul", "Vietnam", "Bangladesh"],
+      "portos_embarque_br": ["Santos/SP", "Paranagua/PR", "Rio Grande/RS", "Sao Luis/MA", "Itaqui/MA"],
+      "specs": {
+        "proteina_min_pct": 34.0,
+        "proteina_max_pct": 38.0,
+        "oleo_min_pct": 18.5,
+        "umidade_max_pct": 14.0,
+        "materia_estranha_max_pct": 2.0,
+        "grao_danificado_max_pct": 8.0,
+        "grao_ardido_max_pct": 3.0,
+        "quebrados_splits_max_pct": 20.0,
+        "peso_hectolitrico_min_kg_hl": 69.0,
+        "test_weight_min_lbs_bushel": 54.0,
+        "aflatoxinas_max_ppb": 20.0,
+        "salmonella": "Ausente em 25g",
+        "variacao_peso_tolerancia_pct": 5.0
+      },
+      "normas": ["GAFTA 100", "ANEC", "Decreto 9523/2018"],
+      "inspecao": {
+        "entidades_aceitas": ["SGS", "CCIC", "Bureau Veritas", "Intertek"],
+        "local": "Porto de embarque",
+        "custo": "Dividido igualmente entre comprador e vendedor (50/50)",
+        "certificados_emitidos": ["Certificate of Quality", "Certificate of Quantity", "Phytosanitary Certificate", "Certificate of Origin"]
+      },
+      "seguro": {
+        "valor_minimo_pct_invoice": 110.0,
+        "beneficiario": "Comprador",
+        "cobertura": "Institute Cargo Clauses A — All Risks"
+      },
+      "pagamento": {
+        "instrumento": "DLC",
+        "tipo": "Irrevocable, Transferable, Divisible, Fully Operative",
+        "banco_emitente": "Top 50/100 World Bank",
+        "prazo_emissao_apos_spa_dias": 7,
+        "prazo_max_emissao_apos_spa_dias": 10,
+        "norma": "UCP 600"
+      },
+      "volume_minimo_mt": 5000,
+      "volume_contrato_padrao_mt": 50000,
+      "frequencia_padrao": "mensal",
+      "duracao_contrato_padrao_meses": 12
+    },
+
+    "soja_non_gmo": {
+      "nome_comercial": "Soybeans Non-GMO",
+      "nome_ptbr": "Soja em Grao (Nao-OGM)",
+      "codigos": ["HS 1201.90.00"],
+      "unidades_padrao": ["MT", "ton"],
+      "incoterms_permitidos": ["CIF", "FOB", "CFR"],
+      "incoterms_preferencial": "CIF",
+      "specs": {
+        "proteina_min_pct": 34.0,
+        "oleo_min_pct": 18.0,
+        "umidade_max_pct": 13.5,
+        "materia_estranha_max_pct": 1.0,
+        "grao_danificado_max_pct": 5.0,
+        "quebrados_splits_max_pct": 15.0,
+        "ogm_max_pct": 0.9,
+        "aflatoxinas_max_ppb": 10.0,
+        "variacao_peso_tolerancia_pct": 3.0
+      },
+      "normas": ["GAFTA 100", "EU Non-GMO Directive 1829/2003"],
+      "inspecao": {
+        "entidades_aceitas": ["SGS", "Bureau Veritas", "Intertek"],
+        "local": "Porto de embarque",
+        "certificados_adicionais": ["Non-GMO Certificate", "Identity Preservation Certificate"]
+      },
+      "premio_sobre_gmo_usd_mt": 30.0
+    },
+
+    "acucar_icumsa45": {
+      "nome_comercial": "White Crystal Sugar ICUMSA 45",
+      "nome_ptbr": "Acucar Branco ICUMSA 45",
+      "codigos": ["HS 1701.99.90", "ICE SB"],
+      "unidades_padrao": ["MT", "ton"],
+      "incoterms_permitidos": ["CIF", "FOB", "CFR"],
+      "incoterms_preferencial": "CIF",
+      "destinos_tipicos": ["Oriente Medio", "Africa", "Asia", "Europa Oriental"],
+      "portos_embarque_br": ["Santos/SP", "Paranagua/PR", "Maceio/AL", "Recife/PE"],
+      "specs": {
+        "icumsa_max": 45,
+        "pol_sacarose_min_pct": 99.8,
+        "umidade_max_pct": 0.04,
+        "cinzas_condutimetricas_max_pct": 0.04,
+        "reducao_acucar_max_pct": 0.05,
+        "cor_solucao_max_icumsa": 45,
+        "granulometria_mm_min": 0.3,
+        "granulometria_mm_max": 1.0,
+        "so2_max_ppm": 20,
+        "arsenic_max_ppm": 1,
+        "lead_max_ppm": 0.5,
+        "variacao_peso_tolerancia_pct": 0.5
+      },
+      "embalagem": {
+        "big_bag_kg": 1000,
+        "saco_kg": 50,
+        "opcoes": ["Big Bag 1MT", "Saco 50kg", "Bag-in-Box"]
+      },
+      "normas": ["CODEX STAN 212-1999", "EU Directive 2001/111/EC", "ABNT NBR 15.635"],
+      "inspecao": {
+        "entidades_aceitas": ["SGS", "CCIC", "Bureau Veritas", "Sucden"],
+        "local": "Fabrica e porto de embarque",
+        "testes": ["Pol (Polarimetry)", "ICUMSA Method GS2-9", "Grain Size Distribution"]
+      },
+      "pagamento": {
+        "instrumento": "DLC",
+        "tipo": "Irrevocable, Transferable, Divisible, Fully Operative",
+        "banco_emitente": "Top 25 World Bank",
+        "prazo_emissao_apos_spa_dias": 7,
+        "norma": "UCP 600"
+      },
+      "volume_minimo_mt": 12500,
+      "volume_por_navio_mt": 25000,
+      "frequencia_padrao": "mensal"
+    },
+
+    "milho_amarelo": {
+      "nome_comercial": "Yellow Corn No. 2",
+      "nome_ptbr": "Milho Amarelo",
+      "codigos": ["HS 1005.90.10", "CBOT ZC"],
+      "unidades_padrao": ["MT", "ton", "bushel"],
+      "incoterms_permitidos": ["CIF", "FOB", "CFR"],
+      "incoterms_preferencial": "CIF",
+      "destinos_tipicos": ["Egito", "China", "Vietna", "Indonesia", "Marrocos"],
+      "portos_embarque_br": ["Santos/SP", "Paranagua/PR", "Itaqui/MA", "Barcarena/PA"],
+      "specs": {
+        "umidade_max_pct": 14.0,
+        "impurezas_max_pct": 1.0,
+        "grao_avariado_max_pct": 6.0,
+        "grao_ardido_max_pct": 3.0,
+        "grao_quebrado_max_pct": 3.0,
+        "peso_hectolitrico_min_kg_hl": 73.0,
+        "test_weight_min_lbs_bushel": 56.0,
+        "aflatoxinas_max_ppb": 20.0,
+        "fumonisinas_max_ppm": 4.0,
+        "variacao_peso_tolerancia_pct": 5.0
+      },
+      "normas": ["GAFTA 119", "Portaria MAPA 845/1976", "Instrucao Normativa MAPA 60/2011"],
+      "inspecao": {
+        "entidades_aceitas": ["SGS", "Bureau Veritas", "Intertek", "CCIC"],
+        "local": "Porto de embarque"
+      },
+      "pagamento": {
+        "instrumento": "DLC",
+        "tipo": "Irrevocable, Transferable, Divisible, Fully Operative",
+        "banco_emitente": "Top 50/100 World Bank",
+        "norma": "UCP 600"
+      },
+      "volume_minimo_mt": 25000,
+      "volume_padrao_mt": 50000
+    },
+
+    "oleo_soja_degomado": {
+      "nome_comercial": "Degummed Soybean Oil",
+      "nome_ptbr": "Oleo de Soja Degomado",
+      "codigos": ["HS 1507.10.00", "CBOT BO"],
+      "unidades_padrao": ["MT", "ton"],
+      "incoterms_permitidos": ["CIF", "FOB", "CFR"],
+      "incoterms_preferencial": "CIF",
+      "specs": {
+        "acidez_max_pct_acido_oleico": 0.3,
+        "umidade_impurezas_max_pct": 0.2,
+        "fosforo_max_ppm": 200,
+        "cor_lovibond_max_Y": 70,
+        "sabao_max_ppm": 50,
+        "tocoferol_min_ppm": 500,
+        "ponto_fumaca_min_c": 232,
+        "variacao_peso_tolerancia_pct": 0.5
+      },
+      "normas": ["FOSFA 53", "CODEX STAN 210-1999"],
+      "inspecao": {
+        "entidades_aceitas": ["SGS", "Inspectorate", "Caleb Brett"],
+        "local": "Tanque na origem e tanque no destino"
+      },
+      "transporte": {
+        "tipo": "Navio tanque dedicado",
+        "temperatura_max_c": 35,
+        "certificado_limpeza": "Requerido"
+      },
+      "volume_minimo_mt": 1000,
+      "volume_padrao_mt": 5000
+    }
+  },
+
+  "incoterms": {
+    "CIF": {
+      "nome": "Cost, Insurance and Freight",
+      "norma": "Incoterms 2020 — ICC Publication No. 723",
+      "responsabilidade_vendedor": "Frete + seguro ate porto de destino",
+      "transferencia_risco": "Quando mercadoria passa a amurada do navio no porto de EMBARQUE",
+      "seguro_obrigatorio": true,
+      "seguro_cobertura_minima": "Institute Cargo Clauses C",
+      "seguro_valor_minimo_pct": 110.0,
+      "modalidades_transporte": ["Maritimo", "Fluvial"],
+      "documentos_tipicos": ["Bill of Lading", "Commercial Invoice", "Packing List", "Insurance Certificate", "Certificate of Origin", "Certificate of Quality"]
+    },
+    "FOB": {
+      "nome": "Free on Board",
+      "norma": "Incoterms 2020 — ICC Publication No. 723",
+      "responsabilidade_vendedor": "Entrega no porto de embarque (a bordo do navio)",
+      "transferencia_risco": "Quando mercadoria esta a bordo do navio designado pelo comprador",
+      "seguro_obrigatorio": false,
+      "modalidades_transporte": ["Maritimo", "Fluvial"]
+    },
+    "CFR": {
+      "nome": "Cost and Freight",
+      "norma": "Incoterms 2020 — ICC Publication No. 723",
+      "responsabilidade_vendedor": "Frete ate porto de destino (sem seguro)",
+      "transferencia_risco": "Quando mercadoria esta a bordo no porto de EMBARQUE",
+      "seguro_obrigatorio": false,
+      "nota": "Comprador responsavel pelo seguro"
+    },
+    "DAP": {
+      "nome": "Delivered at Place",
+      "norma": "Incoterms 2020 — ICC Publication No. 723",
+      "responsabilidade_vendedor": "Entrega no local designado no destino (sem desembaraco)",
+      "transferencia_risco": "Local de destino acordado",
+      "modalidades_transporte": ["Qualquer modalidade"]
+    },
+    "DDP": {
+      "nome": "Delivered Duty Paid",
+      "norma": "Incoterms 2020 — ICC Publication No. 723",
+      "responsabilidade_vendedor": "Entrega com todos os impostos pagos",
+      "transferencia_risco": "Local de destino acordado, ja desembaracado",
+      "modalidades_transporte": ["Qualquer modalidade"],
+      "nota": "Maxima responsabilidade para o vendedor"
+    }
+  },
+
+  "instrumentos_pagamento": {
+    "DLC": {
+      "nome": "Documentary Letter of Credit (Carta de Credito Documentaria)",
+      "norma": "UCP 600 — ICC Publication No. 600",
+      "tipo_obrigatorio": "Irrevocable, Transferable, Divisible, Fully Operative, Confirmed",
+      "banco_emitente_minimo": "Top 50/100 World Bank por ativos (Bloomberg / FT ranking)",
+      "prazo_validade_minimo_dias": 90,
+      "prazo_emissao_apos_spa_dias": 7,
+      "prazo_maxima_emissao_apos_spa_dias": 14,
+      "documentos_exigidos_uc600": [
+        "Commercial Invoice (Art. 18)",
+        "Bill of Lading or Sea Waybill (Art. 20-21)",
+        "Insurance Document (Art. 28) — quando CIF/CIP",
+        "Certificate of Origin",
+        "Packing List",
+        "Certificate of Quality & Quantity — emitido por entidade neutra"
+      ],
+      "cláusulas_proibidas": [
+        "Soft Probe (sem POF valido)",
+        "Desconto em preco com BL emitido antes da DLC"
+      ]
+    },
+    "TT": {
+      "nome": "Telegraphic Transfer (Wire Transfer)",
+      "uso_tipico": "Performance Bond, Adiantamento de sinal",
+      "percentual_tipico_pct": 2.0
+    }
+  },
+
+  "documentos_contratuais": {
+    "LOI": {
+      "nome": "Letter of Intent",
+      "proposito": "Manifestacao formal de interesse de compra/venda, sem obrigacao financeira ainda",
+      "sequencia_processo": 1,
+      "validade_tipica_dias": 3,
+      "clausulas_obrigatorias": [
+        "Identificacao completa das partes (razao social, CNPJ/reg, pais)",
+        "Commodity, volume, qualidade, Incoterm, preco indicativo",
+        "Disponibilidade do produto (prontamente disponivel ou producao futura)",
+        "Disposicao para emitir ICPO apos confirmacao de FCO",
+        "Clausula de confidencialidade por referencia a NCNDA",
+        "Assinatura e carimbo da empresa"
+      ],
+      "pronome_corporativo": "its (nao 'his' ou 'her')"
+    },
+    "ICPO": {
+      "nome": "Irrevocable Corporate Purchase Order",
+      "proposito": "Ordem de compra irrevogavel com comprometimento financeiro do comprador",
+      "sequencia_processo": 2,
+      "validade_tipica_dias": 5,
+      "clausulas_obrigatorias": [
+        "Partes: razao social, board resolution ou POA",
+        "Commodity e especificacoes tecnicas completas",
+        "Volume total e por entrega (MT)",
+        "Preco alvo (USD/MT) e Incoterm",
+        "Instrumento de pagamento: DLC UCP 600 (banco Top 50/100)",
+        "Coordenadas bancarias do comprador",
+        "Autorizacao para Soft Probe (POF — Proof of Funds)",
+        "Validade e data de expiracao",
+        "Assinatura autorizada + carimbo",
+        "Clausula de performance bond 2%"
+      ],
+      "pronome_corporativo": "its (nao 'his' ou 'her')"
+    },
+    "FCO": {
+      "nome": "Full Corporate Offer",
+      "proposito": "Oferta firme e completa do vendedor com todas as condicoes comerciais",
+      "sequencia_processo": 3,
+      "validade_tipica_dias": 5,
+      "clausulas_obrigatorias": [
+        "Partes: razao social, pais, representante autorizado",
+        "Commodity, grade, certificacao (GMO/Non-GMO)",
+        "Volume total e schedule de entregas (MT/mes x meses)",
+        "Preco (USD/MT) e Incoterm com porto de embarque",
+        "Instrumento de pagamento DLC conforme UCP 600",
+        "Banco aceito: Top 50/100 por ativos",
+        "Prazo de emissao da DLC apos assinatura do SPA",
+        "Especificacoes tecnicas completas",
+        "Procedimento: CIS > FCO > POF > SPA > Draft DLC > PI > DLC operativa > Embarque",
+        "Inspecao por entidade neutra (SGS/CCIC/BV)",
+        "Seguro 110% em nome do comprador",
+        "Arbitragem: GAFTA/FOSFA ou corte aplicavel",
+        "Penalidade por nao-performance: performance bond 2%",
+        "Clausula de Force Majeure",
+        "Confidencialidade — NCNDA por referencia",
+        "IMFPA — protecao de comissoes dos intermediarios"
+      ],
+      "pronome_corporativo": "its (nao 'his' ou 'her')"
+    },
+    "SPA": {
+      "nome": "Sale and Purchase Agreement",
+      "proposito": "Contrato definitivo vinculante entre comprador e vendedor",
+      "sequencia_processo": 4,
+      "clausulas_obrigatorias": [
+        "Partes: razao social completa, CNPJ/reg, representante legal, board resolution",
+        "Objeto: commodity, grade, certificacoes",
+        "Volume por entrega e schedule completo",
+        "Preco final (USD/MT) e Incoterm com porto",
+        "DLC: banco, tipo (UCP 600), prazo de emissao",
+        "Performance Bond: 2% do valor total via TT",
+        "Inspecao: SGS/CCIC/BV na origem",
+        "Seguro: 110% Institute Cargo Clauses A",
+        "Documentos de embarque exigidos",
+        "Penalidades por nao entrega: 0.5% por dia de atraso + arbitragem",
+        "Force Majeure",
+        "Governing law e Arbitragem (GAFTA/FOSFA/ICC)",
+        "NCNDA e IMFPA incorporados por referencia",
+        "Assinatura das duas partes + testemunhas"
+      ],
+      "performance_bond_pct": 2.0,
+      "penalidade_atraso_pct_dia": 0.5,
+      "pronome_corporativo": "its (nao 'his' ou 'her')"
+    },
+    "NCNDA": {
+      "nome": "Non-Circumvention Non-Disclosure Agreement",
+      "proposito": "Proteger informacoes confidenciais e circuito de negocios — impede que partes bypassem intermediarios",
+      "sequencia_processo": 0,
+      "validade_tipica_anos": 2,
+      "clausulas_obrigatorias": [
+        "Identificacao das partes e seus papeis (vendedor, comprador, intermediario)",
+        "Definicao de informacoes confidenciais (contatos, precos, origens, destinos)",
+        "Proibicao de circunvencao: nao contatar diretamente os contatos apresentados",
+        "Prazo de vigencia (minimo 2 anos)",
+        "Penalidade por circunvencao (tipicamente 5% da operacao ou valor fixo)",
+        "Jurisdicao e lei aplicavel",
+        "Clausula de sobrevivencia apos termino",
+        "Assinatura e data de todas as partes"
+      ],
+      "pronome_corporativo": "its (nao 'his' ou 'her')"
+    },
+    "IMFPA": {
+      "nome": "Irrevocable Master Fee Protection Agreement",
+      "proposito": "Garantir pagamento irrevogavel de comissoes a intermediarios na operacao",
+      "sequencia_processo": 0,
+      "clausulas_obrigatorias": [
+        "Identificacao das partes (vendedor, comprador, intermediarios)",
+        "Percentual de comissao de cada intermediario",
+        "Base de calculo (valor do contrato, USD total)",
+        "Condicao: comissao paga simultaneamente ao pagamento principal",
+        "Irrevogabilidade do acordo",
+        "Conta bancaria de cada beneficiario",
+        "Assinatura e carimbo do comprador E do vendedor",
+        "Data de vigencia e termino"
+      ],
+      "pronome_corporativo": "its (nao 'his' ou 'her')"
+    }
+  },
+
+  "regras_compliance": {
+    "pronomes_corporativos": {
+      "regra": "Entidades corporativas (empresas, bancos, fundos) SEMPRE usam 'its', NUNCA 'his' ou 'her'",
+      "exemplos_corretos": [
+        "The Company represents its shareholders",
+        "Buyer shall fulfill its obligations",
+        "The bank confirms its commitment"
+      ],
+      "exemplos_errados": [
+        "The Company represents his shareholders",
+        "Buyer shall fulfill her obligations"
+      ],
+      "fonte": "ICC Publication No. 600 — UCP 600, interpretacao ICC"
+    },
+    "dlc_ucp600": {
+      "artigos_criticos": {
+        "Art_2": "Definicoes — O que constitui um credito documentario",
+        "Art_4": "Creditos vs Contratos — DLC e independente do contrato subjacente",
+        "Art_5": "Documentos vs Mercadorias — bancos examinam documentos, nao mercadorias",
+        "Art_6": "Disponibilidade, Vencimento e Local de Apresentacao",
+        "Art_14": "Padrao de Exame de Documentos — conformidade estrita",
+        "Art_18": "Fatura Comercial — deve corresponder exatamente ao credito",
+        "Art_20": "Bill of Lading — requisitos mandatorios",
+        "Art_28": "Documento de Seguro e Cobertura — minimo 110% CIF ou CIP"
+      },
+      "prazo_exame_documentos_dias_uteis": 5
+    }
+  }
+}

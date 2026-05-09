@@ -24,7 +24,8 @@ temp/
 data/raw/
 data/processed/
 data/sheets/
-data/knowledge/
+data/knowledge/__pycache__/
+# data/knowledge/ — loi_dictionary.py e commodities_specs.json SÃO rastreados
 data/logs/
 
 # ── Arquivos de desenvolvimento ───────────────────────────────────────────────
