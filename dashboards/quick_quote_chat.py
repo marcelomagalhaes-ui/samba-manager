@@ -251,15 +251,32 @@ _PORTO_DEFAULT: dict[str, str] = {
 
 def _parse_query_gemini(texto: str) -> dict:
     """
-    Chama Gemini para extrair produto, incoterm, destino e volume.
-    Retorna dict com chaves: produto, incoterm, destino, volume_mt, raw.
-    Em caso de falha cai no parser local simples.
+    Estratégia de parsing em duas camadas:
+      1. Parser local — zero latência, 60+ aliases robustos (sempre roda primeiro)
+      2. Gemini — só chamado se local NÃO identificou produto OU destino,
+                  com timeout de 4 s para não travar a UI.
     """
+    # ── Camada 1: local instantâneo ──────────────────────────────────────────
+    local = _parse_query_local(texto)
+
+    # Se o parser local já identificou produto E destino (ou é FOB/EXW sem destino)
+    _inc_no_dest = local.get("incoterm") in ("EXW", "FAS", "FOB")
+    if local.get("produto") and (local.get("destino") or _inc_no_dest):
+        return local   # retorna imediatamente, sem chamar Gemini
+
+    # ── Camada 2: Gemini com timeout de 4 s (só se local falhou em algo) ─────
     try:
+        import concurrent.futures
         import google.generativeai as genai
+
         api_key = os.getenv("GEMINI_API_KEY") or ""
+        try:
+            api_key = api_key or st.secrets.get("GEMINI_API_KEY", "")
+        except Exception:
+            pass
         if not api_key:
-            raise ValueError("sem api key")
+            return local  # sem chave → devolve o que o parser local conseguiu
+
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel("gemini-1.5-flash")
         prompt = f"""
@@ -267,40 +284,49 @@ Voce e um assistente de trading de commodities agricolas para exportacao do Bras
 Analise a mensagem abaixo e extraia as informacoes em JSON puro (sem markdown, sem explicacao).
 
 IMPORTANTE — grafias incorretas ou variantes sao comuns. Normalize sempre:
-- "Vietnam", "Vietna", "Viet Nam", "Vietname", "Vietnã" → destino = "Vietnam"
-- "Indonesia", "Indonecia", "Indonésia" → destino = "Indonesia"
-- "India", "Indie", "Índia" → destino = "India"
-- "Egito", "Egypt", "Egipo" → destino = "Egito"
+- "Vietnam", "Vietna", "Viet Nam", "Vietname" → destino = "Vietnam"
+- "Indonesia", "Indonecia" → destino = "Indonesia"
+- "India", "Indie" → destino = "India"
+- "Egito", "Egypt" → destino = "Egito"
 - "China", "Xina", "PRC" → destino = "China"
 - "oriente medio", "middle east", "golfo" → destino = "Oriente Medio"
-- "Europa", "Europe", "Rotterdam" → destino = "Europa NW"
+- "Europa", "Rotterdam", "Hamburg" → destino = "Europa NW"
 - "EUA", "USA", "Estados Unidos" → destino = "EUA"
-- "Africa", "Africa Ocidental" → destino = "Africa"
 
 Campos:
 - "produto": um de [SOY, CORN, SUGAR_VHP, SUGAR_IC45, SUGAR_IC150] ou null
 - "incoterm": um de [EXW, FAS, FOB, CFR, CIF] ou null (padrao CIF se nao informado)
-- "destino": nome canonico do destino em portugues sem acento ou null
+- "destino": nome canonico do destino ou null
 - "volume_mt": inteiro em toneladas metricas (padrao 25000)
-- "porto_br": porto brasileiro de embarque (Santos, Paranagua, Outeiro, Itaqui) ou null
+- "porto_br": porto brasileiro de embarque ou null
 
 Mensagem: "{texto}"
 
 Responda SOMENTE com o JSON.
 Exemplo: {{"produto":"SOY","incoterm":"CIF","destino":"Vietnam","volume_mt":25000,"porto_br":null}}
 """
-        resp = model.generate_content(prompt)
-        raw = resp.text.strip().strip("```json").strip("```").strip()
-        parsed = json.loads(raw)
+        def _call_gemini():
+            resp = model.generate_content(prompt)
+            raw = resp.text.strip().strip("```json").strip("```").strip()
+            return json.loads(raw)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+            fut = ex.submit(_call_gemini)
+            try:
+                parsed = fut.result(timeout=4)  # máximo 4 segundos
+            except concurrent.futures.TimeoutError:
+                return local  # Gemini demorou → usa o que o local conseguiu
+
+        # Mescla: Gemini preenche apenas o que o local não conseguiu
         return {
-            "produto":    parsed.get("produto"),
-            "incoterm":   parsed.get("incoterm", "CIF"),
-            "destino":    parsed.get("destino"),
-            "volume_mt":  int(parsed.get("volume_mt") or 25_000),
-            "porto_br":   parsed.get("porto_br"),
+            "produto":   local.get("produto") or parsed.get("produto"),
+            "incoterm":  local.get("incoterm") or parsed.get("incoterm") or "CIF",
+            "destino":   local.get("destino") or parsed.get("destino"),
+            "volume_mt": local.get("volume_mt") or int(parsed.get("volume_mt") or 25_000),
+            "porto_br":  local.get("porto_br") or parsed.get("porto_br"),
         }
     except Exception:
-        return _parse_query_local(texto)
+        return local
 
 
 def _parse_query_local(texto: str) -> dict:
