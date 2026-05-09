@@ -682,7 +682,7 @@ def _render_ticker(snap: dict):
         dot = f'<span style="display:inline-block;width:6px;height:6px;background:{cor};border-radius:50%;margin-right:5px;vertical-align:middle"></span>' if val > 0 else ""
         with cols[i]:
             st.markdown(
-                f'<div style="background:linear-gradient(160deg,#12141C 0%,#1C1F2E 100%);'
+                f'<div style="background:#12141C;'
                 f'border:1px solid #2A2E3F;border-radius:10px;padding:14px 12px;'
                 f'text-align:center;font-family:Montserrat,sans-serif;'
                 f'box-shadow:0 4px 16px rgba(0,0,0,.35)">'
@@ -726,7 +726,7 @@ def _render_stack_card(r: dict, porto_label: str, produto_meta: dict,
     basis_cor = "#329632" if r["basis"] >= 0 else "#fa3232"
     basis_sg  = "+" if r["basis"] >= 0 else ""
     st.markdown(
-        f'<div style="background:linear-gradient(160deg,#FFFDF8 0%,#FFF8EE 100%);border:1px solid #F0E6D0;border-top:4px solid #FA8200;border-radius:12px;padding:24px 28px;margin:12px 0;box-shadow:0 4px 20px rgba(250,130,0,.08);font-family:Montserrat,sans-serif">'
+        f'<div style="background:#FFFDF8;border:1px solid #F0E6D0;border-top:4px solid #FA8200;border-radius:12px;padding:24px 28px;margin:12px 0;box-shadow:0 4px 20px rgba(250,130,0,.08);font-family:Montserrat,sans-serif">'
         f'<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">'
         f'<div style="font-size:9px;font-weight:700;letter-spacing:2.5px;color:#FA8200">{prod_lbl.upper()} &nbsp;·&nbsp; FOB {porto_label.upper()}</div>'
         f'{_badge(regiao, "#64C8FA")}{icumsa_badge}'
@@ -785,7 +785,7 @@ def _render_comparativo(snap: dict, produto_key: str, produto_meta: dict,
         r  = _calcular_stack(snap, meta, produto_meta, volume,
                              pf["preco_brl_ton"] if pf else None)
         destaque = label == porto_atual
-        bg  = "linear-gradient(90deg,#FFF3E3 0%,#FFFBF5 100%)" if destaque else "#fff"
+        bg  = "#FFF3E3" if destaque else "#fff"
         fw  = "800"    if destaque else "500"
         bdr = "border-left:4px solid #FA8200;" if destaque else "border-left:4px solid transparent;"
         basis_txt = f'{r["basis"]:+.1f}' if r["basis"] != 0 else "—"
@@ -804,7 +804,7 @@ def _render_comparativo(snap: dict, produto_key: str, produto_meta: dict,
     st.markdown(
         f'<div style="background:#fff;border:1px solid #EDE8E0;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06)">'
         f'<table style="width:100%;border-collapse:collapse">'
-        f'<thead><tr style="background:linear-gradient(90deg,#1A1D2A 0%,#222538 100%);border-bottom:2px solid #FA8200">'
+        f'<thead><tr style="background:#1A1D2A;border-bottom:2px solid #FA8200">'
         f'<th style="padding:10px 14px;text-align:left;font-size:9px;font-weight:700;letter-spacing:1.5px;color:#7A8299">PORTO</th>'
         f'<th style="padding:10px 14px;text-align:left;font-size:9px;font-weight:700;letter-spacing:1.5px;color:#7A8299">REGIÃO</th>'
         f'<th style="padding:10px 14px;text-align:right;font-size:9px;font-weight:700;letter-spacing:1.5px;color:#FA8200">FOB USD/MT</th>'

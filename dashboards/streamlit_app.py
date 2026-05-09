@@ -888,7 +888,7 @@ html, body, [class*="css"] {
     color: var(--samba-ice) !important;
 }
 .stApp {
-    background: linear-gradient(160deg, #EDEAE4 0%, #E8E3DA 100%) !important;
+    background: #EDEAE4 !important;
     color: var(--samba-ice);
 }
 header { visibility: hidden; }
@@ -1074,7 +1074,7 @@ section[data-testid="stSidebar"] div[data-testid="stIFrame"] {
 /* ── KPI — Hero metrics row ──────────────────────────────────────────────── */
 .kpi-card {
     flex: 1;
-    background: linear-gradient(135deg, #FA8200 0%, #D96F00 100%);
+    background: #FA8200;
     padding: 20px 22px;
     border-radius: 12px;
     border: 1px solid rgba(255,255,255,.15);
@@ -1132,7 +1132,7 @@ section[data-testid="stSidebar"] div[data-testid="stIFrame"] {
 .samba-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .samba-table thead tr {
     border-bottom: 2px solid var(--samba-gold);
-    background: linear-gradient(90deg, #1A1C24 0%, #222538 100%);
+    background: #1A1C24;
 }
 .samba-table th {
     padding: 10px 14px; text-align: left;
