@@ -2385,7 +2385,7 @@ st.markdown("<div style='margin-bottom:4px'></div>", unsafe_allow_html=True)
 # ========================
 # ABAS
 # ========================
-abas = st.tabs(["Visao Geral", "Cotação", "Formação de Preço", "Pipeline", "Arbitragem", "Book", "Agentes", "Follow-ups 📋", "Compliance 🔏", "Samba Assistant 🤖", "Base de Conhecimento 🧠"])
+abas = st.tabs(["Visao Geral", "Formação de Preço", "Pipeline", "Arbitragem", "Book", "Agentes", "Follow-ups 📋", "Compliance 🔏", "Samba Assistant 🤖", "Base de Conhecimento 🧠"])
 
 # ─────────────────────────────────────────────────────────────────
 # ABA 1 — VISAO GERAL
@@ -2500,23 +2500,16 @@ with abas[0]:
                         )
 
 # ─────────────────────────────────────────────────────────────────
-# ABA 2 — COTAÇÃO
+# ABA 2 — FORMAÇÃO DE PREÇO (Quick Quote → Calculadora → Cotação PDF)
 # ─────────────────────────────────────────────────────────────────
 with abas[1]:
-    from dashboards.cotacao_widget import render_cotacao_tab
-    render_cotacao_tab()
-
-# ─────────────────────────────────────────────────────────────────
-# ABA 3 — FORMAÇÃO DE PREÇO (Motor Samba Limpo)
-# ─────────────────────────────────────────────────────────────────
-with abas[2]:
     from dashboards.pricing_widget import render_pricing_tab
     render_pricing_tab()
 
 # ─────────────────────────────────────────────────────────────────
-# ABA 4 — PIPELINE KANBAN
+# ABA 3 — PIPELINE KANBAN
 # ─────────────────────────────────────────────────────────────────
-with abas[3]:
+with abas[2]:
     st.markdown('<div class="section-title">PIPELINE COMERCIAL — VISÃO INTEGRADA</div>', unsafe_allow_html=True)
     st.caption("Fonte primária: planilha Google Sheets (todos andamento + Andamento Vietnã). Enriquecido com docs Drive.")
 
@@ -2726,9 +2719,9 @@ with abas[3]:
                     st.caption(f"Exibindo primeiros 100 de {len(_decl_filtered)}. Use o filtro para refinar.")
 
 # ─────────────────────────────────────────────────────────────────
-# ABA 5 — ARBITRAGEM
+# ABA 4 — ARBITRAGEM
 # ─────────────────────────────────────────────────────────────────
-with abas[4]:
+with abas[3]:
     df_arb = load_arbitragem()
 
     if df_arb.empty:
@@ -2864,9 +2857,9 @@ with abas[4]:
                 st.info("Nenhuma oportunidade no momento. Classifique mais deals como ASK/BID.")
 
 # ─────────────────────────────────────────────────────────────────
-# ABA 6 — BOOK
+# ABA 5 — BOOK
 # ─────────────────────────────────────────────────────────────────
-with abas[5]:
+with abas[4]:
     st.markdown('<div class="section-title">ORDER BOOK — SPREAD POR COMMODITY</div>', unsafe_allow_html=True)
     st.caption("Melhores preços confirmados (BID/ASK) com direção definida. Preços > USD 6.000/MT são excluídos por sanidade.")
 
@@ -2990,9 +2983,9 @@ with abas[5]:
                 ), unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────────
-# ABA 7 — AGENTES
+# ABA 6 — AGENTES
 # ─────────────────────────────────────────────────────────────────
-with abas[6]:
+with abas[5]:
     st.markdown('<div class="section-title">STATUS DOS AGENTES</div>', unsafe_allow_html=True)
 
     AGENTES_CONFIG = [
@@ -3165,9 +3158,9 @@ with abas[6]:
             st.warning(f"Erro ao ler log: {e}")
 
 # ─────────────────────────────────────────────────────────────────
-# ABA 8 — FOLLOW-UPS
+# ABA 7 — FOLLOW-UPS
 # ─────────────────────────────────────────────────────────────────
-with abas[7]:
+with abas[6]:
     st.markdown('<div class="section-title">FOLLOW-UPS — GESTÃO DE CONTATOS E COBRANÇAS</div>', unsafe_allow_html=True)
     st.caption("Agenda de cobranças enriquecida com dados da planilha (comprador, produto, responsável, contexto do deal).")
 
@@ -3404,9 +3397,9 @@ with abas[7]:
                 st.code(_rr.get("response_content") or "—", language=None)
 
 # ─────────────────────────────────────────────────────────────────
-# ABA 9 — COMPLIANCE DOCUMENTAL 🔏
+# ABA 8 — COMPLIANCE DOCUMENTAL 🔏
 # ─────────────────────────────────────────────────────────────────
-with abas[8]:
+with abas[7]:
     st.markdown('<div class="section-title">COMPLIANCE DOCUMENTAL — ICC/UCP 600</div>', unsafe_allow_html=True)
     st.caption("Auditoria de documentos contra clausulas obrigatorias ICC, UCP 600 (Art. 2, 14, 18, 20, 28), Incoterms 2020 e specs tecnicas de commodities.")
 
@@ -3598,9 +3591,9 @@ with abas[8]:
                     pass
 
 # ─────────────────────────────────────────────────────────────────
-# ABA 10 — SAMBA ASSISTANT (Conversational Hub com Tool Calling)
+# ABA 9 — SAMBA ASSISTANT (Conversational Hub com Tool Calling)
 # ─────────────────────────────────────────────────────────────────
-with abas[9]:
+with abas[8]:
     st.markdown('<div class="section-title">SAMBA ASSISTANT — CONVERSATIONAL HUB</div>', unsafe_allow_html=True)
     st.caption(
         "Conversa com o motor Gemini ligado ao ToolRegistry. Pode criar deals, "
@@ -3924,9 +3917,9 @@ with abas[9]:
                     placeholder.error(f"Erro no Assistant: {e}")
 
 # ─────────────────────────────────────────────────────────────────
-# ABA 11 — BASE DE CONHECIMENTO
+# ABA 10 — BASE DE CONHECIMENTO
 # ─────────────────────────────────────────────────────────────────
-with abas[10]:
+with abas[9]:
     st.markdown('<div class="section-title">BASE DE CONHECIMENTO — CEREBRO VETORIAL RAG</div>', unsafe_allow_html=True)
     st.caption("Status em tempo real do CorporateKnowledge + sincronizacao Drive + busca semantica ao vivo.")
 

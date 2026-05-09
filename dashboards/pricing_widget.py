@@ -975,8 +975,17 @@ def _render_cif(snap: dict, resultado: dict, porto_code: str,
 # ─────────────────────────────────────────────────────────────────────────────
 
 def render_pricing_tab():
-    # ── sub-tabs: Quick Quote (chat) + Calculadora (form completo) ───────────
-    tab_qq, tab_calc = st.tabs(["Cotacao Rapida", "Calculadora Detalhada"])
+    """
+    Sub-abas do fluxo de formação de preço:
+      1. Cotacao Rapida  — chat conversacional, resposta imediata
+      2. Calculadora     — form completo com todos os parâmetros
+      3. Cotação / PDF   — gerador de proposta formal (cotacao_widget)
+    """
+    tab_qq, tab_calc, tab_cot = st.tabs([
+        "Cotacao Rapida",
+        "Calculadora Detalhada",
+        "Cotacao / Proposta",
+    ])
 
     with tab_qq:
         try:
@@ -987,6 +996,13 @@ def render_pricing_tab():
 
     with tab_calc:
         _render_calculadora()
+
+    with tab_cot:
+        try:
+            from dashboards.cotacao_widget import render_cotacao_tab
+            render_cotacao_tab()
+        except Exception as _e:
+            st.error(f"Modulo de Cotacao indisponivel: {_e}")
 
 
 def _render_calculadora():
