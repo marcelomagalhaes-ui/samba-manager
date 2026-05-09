@@ -869,70 +869,128 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
 
-/* === SAMBA CLEAN LIGHT — Manual de Marca 2026 ============================= */
+/* === SAMBA PREMIUM LIGHT — Manual de Marca 2026 v2 ======================== */
 :root {
-    --samba-bg:       #F4F5F7;
-    --samba-bg-soft:  #F9F9FB;
+    --samba-bg:       #EDEAE4;
+    --samba-bg-soft:  #F4F1EB;
     --samba-bg-card:  #ffffff;
     --samba-ice:      #1A1A1A;
-    --samba-dim:      #7F7F7F;
+    --samba-dim:      #6B7280;
     --samba-muted:    #BFBFBF;
     --samba-gold:     #FA8200;
     --samba-gold-dim: #C86600;
-    --samba-line:     #E8E9EC;
-    --samba-line-soft:#F4F4F4;
+    --samba-line:     #DDD9D1;
+    --samba-line-soft:#EAE7E1;
 }
 
 html, body, [class*="css"] {
     font-family: 'Montserrat', sans-serif !important;
     color: var(--samba-ice) !important;
 }
-.stApp { background-color: var(--samba-bg) !important; color: var(--samba-ice); }
+.stApp {
+    background: linear-gradient(160deg, #EDEAE4 0%, #E8E3DA 100%) !important;
+    color: var(--samba-ice);
+}
 header { visibility: hidden; }
 .block-container { padding-top: 1rem; max-width: 1400px; }
 
 /* ── Tabs principais ─────────────────────────────────────────────────────── */
+[data-testid="stTabBar"] {
+    background: #1A1C24 !important;
+    border-bottom: none !important;
+    border-radius: 10px !important;
+    padding: 4px 6px !important;
+    gap: 2px !important;
+    margin-bottom: 12px !important;
+}
 button[data-baseweb="tab"] {
-    color: var(--samba-muted) !important;
+    color: #6B7280 !important;
     font-family: 'Montserrat', sans-serif !important;
-    font-size: 13px !important; font-weight: 600 !important;
+    font-size: 12px !important; font-weight: 700 !important;
     background: transparent !important;
+    border-radius: 7px !important;
+    padding: 7px 14px !important;
+    letter-spacing: .6px !important;
+    border-bottom: none !important;
+    transition: all .15s !important;
 }
 button[data-baseweb="tab"][aria-selected="true"] {
-    color: var(--samba-gold) !important;
-    border-bottom: 2px solid var(--samba-gold) !important;
+    color: #ffffff !important;
+    background: #FA8200 !important;
+    border-bottom: none !important;
 }
-button[data-baseweb="tab"]:hover { color: var(--samba-dim) !important; }
-[data-testid="stTabBar"] {
-    border-bottom: 1px solid var(--samba-line) !important;
-    background: transparent !important;
+button[data-baseweb="tab"]:hover:not([aria-selected="true"]) {
+    color: #D1D5DB !important;
+    background: rgba(255,255,255,.07) !important;
 }
-.stSelectbox label, .stTextInput label {
+
+/* ── Labels de selectbox/input ───────────────────────────────────────────── */
+.stSelectbox label, .stTextInput label, .stNumberInput label {
     color: var(--samba-dim) !important;
     font-family: 'Montserrat', sans-serif !important;
     font-size: 10px !important; font-weight: 700 !important;
     letter-spacing: 1.2px !important; text-transform: uppercase !important;
 }
 
+/* ── Selectbox ───────────────────────────────────────────────────────────── */
+.stSelectbox [data-baseweb="select"] > div:first-child {
+    background: #ffffff !important;
+    border: 1px solid var(--samba-line) !important;
+    border-radius: 8px !important;
+    font-family: 'Montserrat', sans-serif !important;
+    font-size: 13px !important; font-weight: 600 !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06) !important;
+    transition: border-color .15s, box-shadow .15s !important;
+}
+.stSelectbox [data-baseweb="select"]:focus-within > div:first-child {
+    border-color: var(--samba-gold) !important;
+    box-shadow: 0 0 0 3px rgba(250,130,0,.12) !important;
+}
+
+/* ── Number input ────────────────────────────────────────────────────────── */
+.stNumberInput input {
+    background: #ffffff !important;
+    border: 1px solid var(--samba-line) !important;
+    border-radius: 8px !important;
+    font-family: 'Montserrat', sans-serif !important;
+    font-size: 14px !important; font-weight: 700 !important;
+    color: var(--samba-ice) !important;
+}
+.stNumberInput input:focus {
+    border-color: var(--samba-gold) !important;
+    box-shadow: 0 0 0 3px rgba(250,130,0,.12) !important;
+}
+.stNumberInput button {
+    background: #F4F1EB !important;
+    border: 1px solid var(--samba-line) !important;
+    color: var(--samba-dim) !important;
+    border-radius: 6px !important;
+}
+.stNumberInput button:hover { background: #FA8200 !important; color: #fff !important; border-color: #FA8200 !important; }
+
 /* ── Botões nativos Streamlit ────────────────────────────────────────────── */
 div.stButton > button {
-    background: #ffffff !important;
-    color: var(--samba-dim) !important;
-    border: 1px solid var(--samba-line) !important;
-    border-radius: 6px !important;
+    background: #1A1C24 !important;
+    color: #D1D5DB !important;
+    border: 1px solid #2E3141 !important;
+    border-radius: 8px !important;
     font-family: 'Montserrat', sans-serif !important;
-    font-weight: 600 !important; font-size: 12px !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04) !important;
+    font-weight: 700 !important; font-size: 12px !important;
+    letter-spacing: .5px !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,.15) !important;
+    transition: all .15s !important;
 }
 div.stButton > button:hover {
-    background: #FFF8F0 !important;
-    border-color: var(--samba-gold) !important;
-    color: var(--samba-gold) !important;
+    background: #FA8200 !important;
+    border-color: #FA8200 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(250,130,0,.35) !important;
 }
 div.stButton > button:disabled {
-    color: var(--samba-muted) !important;
-    border-color: #EBEBEB !important;
-    background: #FAFAFA !important;
+    background: #2A2D38 !important;
+    color: #4B5563 !important;
+    border-color: #2E3141 !important;
+    box-shadow: none !important;
 }
 
 /* ── FAB injector iframe — zero espaço visual ────────────────────────────── */
@@ -967,12 +1025,17 @@ section[data-testid="stSidebar"] div[data-testid="stIFrame"] {
 .samba-card {
     background-color: var(--samba-bg-card); border-radius: 12px;
     border: 1px solid var(--samba-line); padding: 22px; margin-bottom: 16px;
-    box-shadow: 0 1px 6px rgba(0,0,0,.05);
+    box-shadow: 0 2px 12px rgba(0,0,0,.08);
 }
 .section-title {
     font-size: 9px; letter-spacing: 2.2px; font-weight: 700;
     color: var(--samba-gold); margin-bottom: 14px; text-transform: uppercase;
     font-family: 'Montserrat', sans-serif;
+    display: flex; align-items: center; gap: 8px;
+}
+.section-title::before {
+    content: ""; display: inline-block; width: 3px; height: 14px;
+    background: var(--samba-gold); border-radius: 2px;
 }
 
 /* ── DARK HEADER — Brand Manual pág. 3 ──────────────────────────────────── */
@@ -1008,16 +1071,19 @@ section[data-testid="stSidebar"] div[data-testid="stIFrame"] {
     filter: invert(0) sepia(1) saturate(5) hue-rotate(0deg) !important;
 }
 
-/* ── KPI — Hero metrics row (Brand Manual: Samba Orange solid) ────────────── */
+/* ── KPI — Hero metrics row ──────────────────────────────────────────────── */
 .kpi-card {
-    flex: 1; background: #FA8200; padding: 20px 22px;
-    border-radius: 12px; border: 1px solid #FA8200;
-    box-shadow: 0 4px 14px rgba(250,130,0,.20);
+    flex: 1;
+    background: linear-gradient(135deg, #FA8200 0%, #D96F00 100%);
+    padding: 20px 22px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.15);
+    box-shadow: 0 6px 20px rgba(250,130,0,.30), 0 1px 4px rgba(0,0,0,.15);
     transition: transform .15s, box-shadow .15s;
 }
-.kpi-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(250,130,0,.30); }
-.kpi-label { font-size: 9px; letter-spacing: 2px; color: rgba(255,255,255,0.80); font-weight: 700; text-transform: uppercase; }
-.kpi-value { font-size: 30px; font-weight: 900; color: #FFFFFF; margin: 6px 0 2px; font-family: 'Montserrat', sans-serif; line-height: 1.05; }
+.kpi-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(250,130,0,.40); }
+.kpi-label { font-size: 9px; letter-spacing: 2px; color: rgba(255,255,255,0.75); font-weight: 700; text-transform: uppercase; }
+.kpi-value { font-size: 30px; font-weight: 900; color: #FFFFFF; margin: 6px 0 2px; font-family: 'Montserrat', sans-serif; line-height: 1.05; text-shadow: 0 1px 4px rgba(0,0,0,.2); }
 .kpi-sub   { font-size: 11px; color: rgba(255,255,255,0.85); font-weight: 600; }
 
 /* ── RISK BADGES ─────────────────────────────────────────────────────────── */
@@ -1061,14 +1127,17 @@ section[data-testid="stSidebar"] div[data-testid="stIFrame"] {
 .samba-table-wrap {
     overflow-x: auto; border-radius: 10px;
     border: 1px solid var(--samba-line); background: var(--samba-bg-card);
-    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+    box-shadow: 0 2px 12px rgba(0,0,0,.08);
 }
 .samba-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-.samba-table thead tr { border-bottom: 1px solid var(--samba-line); background: var(--samba-bg-soft); }
+.samba-table thead tr {
+    border-bottom: 2px solid var(--samba-gold);
+    background: linear-gradient(90deg, #1A1C24 0%, #222538 100%);
+}
 .samba-table th {
     padding: 10px 14px; text-align: left;
     font-size: 9px; letter-spacing: 1.5px; font-weight: 700;
-    color: var(--samba-muted); text-transform: uppercase;
+    color: #7A8299; text-transform: uppercase;
     font-family: 'Montserrat', sans-serif;
 }
 .samba-table td {
@@ -1076,7 +1145,7 @@ section[data-testid="stSidebar"] div[data-testid="stIFrame"] {
     vertical-align: middle; white-space: nowrap; color: var(--samba-ice);
 }
 .samba-table tbody tr:last-child td { border-bottom: none; }
-.samba-table tbody tr:hover td { background: #FFF8F0; }
+.samba-table tbody tr:hover td { background: #FEF3E2; }
 
 /* ── PRAÇAS PILLS ────────────────────────────────────────────────────────── */
 .praca-pill {

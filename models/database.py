@@ -362,9 +362,9 @@ def get_engine(url: str = None):
             pass
     if not url:
         url = "sqlite:///data/samba_control.db"
-    # Supabase porta 5432 resolve para IPv6 — Streamlit Cloud não suporta.
-    # Substitui por porta 6543 (PgBouncer/IPv4) no mesmo host.
-    if isinstance(url, str) and "supabase.co:5432" in url:
+    # Conexão direta db.supabase.co:5432 resolve para IPv6 — Streamlit Cloud não suporta.
+    # Session Pooler (pooler.supabase.com) já usa IPv4 — não alterar.
+    if isinstance(url, str) and "pooler.supabase.com" not in url and "db." in url and "supabase.co:5432" in url:
         url = url.replace(":5432/", ":6543/")
     return create_engine(url, echo=False)
 

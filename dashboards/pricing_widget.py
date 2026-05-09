@@ -678,13 +678,17 @@ def _render_ticker(snap: dict):
     ]
     cols = st.columns(5)
     for i, (lbl, val, unid) in enumerate(items):
-        cor = "#FA8200" if val > 0 else "#BFBFBF"
+        cor = "#FA8200" if val > 0 else "#555E6D"
+        dot = f'<span style="display:inline-block;width:6px;height:6px;background:{cor};border-radius:50%;margin-right:5px;vertical-align:middle"></span>' if val > 0 else ""
         with cols[i]:
             st.markdown(
-                f'<div style="background:#fff;border:1px solid #E8E9EC;border-radius:8px;padding:10px 12px;text-align:center;font-family:Montserrat,sans-serif">'
-                f'<div style="font-size:9px;font-weight:700;letter-spacing:1px;color:#BFBFBF;margin-bottom:4px">{lbl}</div>'
-                f'<div style="font-size:16px;font-weight:900;color:{cor}">{val:,.2f}</div>'
-                f'<div style="font-size:9px;color:#BFBFBF">{unid}</div>'
+                f'<div style="background:linear-gradient(160deg,#12141C 0%,#1C1F2E 100%);'
+                f'border:1px solid #2A2E3F;border-radius:10px;padding:14px 12px;'
+                f'text-align:center;font-family:Montserrat,sans-serif;'
+                f'box-shadow:0 4px 16px rgba(0,0,0,.35)">'
+                f'<div style="font-size:8px;font-weight:700;letter-spacing:1.5px;color:#4B5563;margin-bottom:7px">{dot}{lbl}</div>'
+                f'<div style="font-size:22px;font-weight:900;color:{cor};line-height:1;letter-spacing:-.5px">{val:,.2f}</div>'
+                f'<div style="font-size:9px;color:#2E3545;margin-top:4px;font-weight:600">{unid if unid else "&nbsp;"}</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
@@ -722,7 +726,7 @@ def _render_stack_card(r: dict, porto_label: str, produto_meta: dict,
     basis_cor = "#329632" if r["basis"] >= 0 else "#fa3232"
     basis_sg  = "+" if r["basis"] >= 0 else ""
     st.markdown(
-        f'<div style="background:#fff;border:1px solid #E8E9EC;border-top:4px solid #FA8200;border-radius:12px;padding:24px 28px;margin:12px 0;box-shadow:0 2px 10px rgba(0,0,0,.06);font-family:Montserrat,sans-serif">'
+        f'<div style="background:linear-gradient(160deg,#FFFDF8 0%,#FFF8EE 100%);border:1px solid #F0E6D0;border-top:4px solid #FA8200;border-radius:12px;padding:24px 28px;margin:12px 0;box-shadow:0 4px 20px rgba(250,130,0,.08);font-family:Montserrat,sans-serif">'
         f'<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">'
         f'<div style="font-size:9px;font-weight:700;letter-spacing:2.5px;color:#FA8200">{prod_lbl.upper()} &nbsp;·&nbsp; FOB {porto_label.upper()}</div>'
         f'{_badge(regiao, "#64C8FA")}{icumsa_badge}'
@@ -781,9 +785,9 @@ def _render_comparativo(snap: dict, produto_key: str, produto_meta: dict,
         r  = _calcular_stack(snap, meta, produto_meta, volume,
                              pf["preco_brl_ton"] if pf else None)
         destaque = label == porto_atual
-        bg  = "#FFF8F0" if destaque else "#fff"
+        bg  = "linear-gradient(90deg,#FFF3E3 0%,#FFFBF5 100%)" if destaque else "#fff"
         fw  = "800"    if destaque else "500"
-        bdr = "border-left:3px solid #FA8200;" if destaque else ""
+        bdr = "border-left:4px solid #FA8200;" if destaque else "border-left:4px solid transparent;"
         basis_txt = f'{r["basis"]:+.1f}' if r["basis"] != 0 else "—"
         obs_txt   = meta.get("obs", "")
         obs_html  = f'<span style="font-size:9px;color:#9B59B6;margin-left:6px">{obs_txt}</span>' if obs_txt else ""
@@ -798,15 +802,15 @@ def _render_comparativo(snap: dict, produto_key: str, produto_meta: dict,
             f'</tr>'
         )
     st.markdown(
-        f'<div style="background:#fff;border:1px solid #E8E9EC;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04)">'
+        f'<div style="background:#fff;border:1px solid #EDE8E0;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06)">'
         f'<table style="width:100%;border-collapse:collapse">'
-        f'<thead><tr style="background:#F9F9FB;border-bottom:1px solid #E8E9EC">'
-        f'<th style="padding:9px 14px;text-align:left;font-size:9px;font-weight:700;letter-spacing:1.5px;color:#BFBFBF">PORTO</th>'
-        f'<th style="padding:9px 14px;text-align:left;font-size:9px;font-weight:700;letter-spacing:1.5px;color:#BFBFBF">REGIÃO</th>'
-        f'<th style="padding:9px 14px;text-align:right;font-size:9px;font-weight:700;letter-spacing:1.5px;color:#BFBFBF">FOB USD/MT</th>'
-        f'<th style="padding:9px 14px;text-align:right;font-size:9px;font-weight:700;letter-spacing:1.5px;color:#BFBFBF">EXW USD/MT</th>'
-        f'<th style="padding:9px 14px;text-align:right;font-size:9px;font-weight:700;letter-spacing:1.5px;color:#BFBFBF">FOB R$/SC</th>'
-        f'<th style="padding:9px 14px;text-align:right;font-size:9px;font-weight:700;letter-spacing:1.5px;color:#BFBFBF">BASIS</th>'
+        f'<thead><tr style="background:linear-gradient(90deg,#1A1D2A 0%,#222538 100%);border-bottom:2px solid #FA8200">'
+        f'<th style="padding:10px 14px;text-align:left;font-size:9px;font-weight:700;letter-spacing:1.5px;color:#7A8299">PORTO</th>'
+        f'<th style="padding:10px 14px;text-align:left;font-size:9px;font-weight:700;letter-spacing:1.5px;color:#7A8299">REGIÃO</th>'
+        f'<th style="padding:10px 14px;text-align:right;font-size:9px;font-weight:700;letter-spacing:1.5px;color:#FA8200">FOB USD/MT</th>'
+        f'<th style="padding:10px 14px;text-align:right;font-size:9px;font-weight:700;letter-spacing:1.5px;color:#7A8299">EXW USD/MT</th>'
+        f'<th style="padding:10px 14px;text-align:right;font-size:9px;font-weight:700;letter-spacing:1.5px;color:#7A8299">FOB R$/SC</th>'
+        f'<th style="padding:10px 14px;text-align:right;font-size:9px;font-weight:700;letter-spacing:1.5px;color:#7A8299">BASIS</th>'
         f'</tr></thead>'
         f'<tbody>{rows_html}</tbody>'
         f'</table>'
