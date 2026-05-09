@@ -676,27 +676,41 @@ def render_quick_quote():
                     unsafe_allow_html=True,
                 )
 
-    # ── Input ────────────────────────────────────────────────────────────────
-    with st.form(key="qq_form", clear_on_submit=True):
-        col_inp, col_btn = st.columns([5, 1])
-        with col_inp:
-            user_input = st.text_input(
-                "Sua consulta",
-                placeholder='Ex: "Soja CIF Vietna 25000 MT" ou "Acucar IC45 FOB Santos"',
-                label_visibility="collapsed",
-                key="qq_input",
-            )
-        with col_btn:
-            enviado = st.form_submit_button("Calcular →", use_container_width=True)
+    # ── Input — text_input + button (mais estável que st.form em tabs) ─────────
+    col_inp, col_btn = st.columns([5, 1])
+    with col_inp:
+        user_input = st.text_input(
+            "Sua consulta",
+            placeholder='Ex: "Soja CIF Vietnam 25000 MT" ou "Acucar IC45 FOB Santos"',
+            label_visibility="collapsed",
+            key="qq_input_text",
+        )
+    with col_btn:
+        enviado = st.button("Calcular", key="qq_btn_calcular", use_container_width=True)
 
-    if enviado and user_input.strip():
-        texto = user_input.strip()
-        # adiciona mensagem do usuário
+    # dispara tanto no botão quanto no Enter (mudança de valor + state flag)
+    _texto_atual = (user_input or "").strip()
+    _processar = enviado and _texto_atual
+
+    if _processar:
+        texto = _texto_atual
         st.session_state.qq_history.append({"role": "user", "content": texto, "result": None})
+        st.session_state.qq_input_text = ""   # limpa o campo
 
         with st.spinner("Calculando..."):
-            parsed = _parse_query_gemini(texto)
-            result = _calcular_quick_quote(parsed, snap)
+            try:
+                parsed = _parse_query_gemini(texto)
+                result = _calcular_quick_quote(parsed, snap)
+            except Exception as _err:
+                parsed = {}
+                result = None
+                st.session_state.qq_history.append({
+                    "role": "system",
+                    "content": f"Erro interno: {_err}",
+                    "result": None,
+                })
+                st.session_state.qq_pending_result = None
+                st.rerun()
 
         if result:
             st.session_state.qq_history.append({
@@ -706,12 +720,15 @@ def render_quick_quote():
             })
             st.session_state.qq_pending_result = result
         else:
-            produto_str = parsed.get("produto") or "produto"
+            _prod_raw = parsed.get("produto") or "?"
+            _inc_raw  = parsed.get("incoterm") or "?"
+            _dst_raw  = parsed.get("destino")  or "?"
             st.session_state.qq_history.append({
                 "role": "system",
                 "content": (
-                    f"Nao consegui identificar o produto ou destino. "
-                    f"Tente: 'Soja CIF China 25000 MT' ou 'Acucar FOB Santos'."
+                    f"Nao consegui calcular. Produto identificado: {_prod_raw} | "
+                    f"Incoterm: {_inc_raw} | Destino: {_dst_raw}. "
+                    f"Verifique e tente novamente. Ex: 'Soja CIF China 25000 MT'."
                 ),
                 "result": None,
             })
