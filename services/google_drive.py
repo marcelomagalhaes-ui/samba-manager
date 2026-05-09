@@ -54,7 +54,10 @@ class DriveManager:
 
     def _authenticate(self):
         """
-        Autentica usando Service Account (preferencial) ou OAuth2 do usuário.
+        Autentica usando (em ordem de prioridade):
+          1. Service Account via arquivo (config/service_account.json)
+          2. OAuth2 via token.json no disco (ambiente local)
+          3. OAuth2 via GOOGLE_TOKEN_JSON na env (Streamlit Cloud secrets)
         """
         # ── Importações lazy para não quebrar se bibliotecas faltarem ────────
         try:
@@ -66,7 +69,7 @@ class DriveManager:
         sa_file = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "config/service_account.json")
         sa_path = Path(sa_file)
 
-        # ── Opção 1: Service Account ──────────────────────────────────────────
+        # ── Opção 1: Service Account (arquivo) ────────────────────────────────
         if sa_path.exists():
             try:
                 from google.oauth2 import service_account
@@ -79,19 +82,33 @@ class DriveManager:
             except Exception as exc:
                 logger.warning("Falha ao autenticar via Service Account: %s", exc)
 
-        # ── Opção 2: OAuth2 do usuário (fluxo original) ───────────────────────
+        # ── Opção 2 & 3: OAuth2 (arquivo local ou env var do Streamlit Cloud) ─
         try:
             from google.oauth2.credentials import Credentials
             from google_auth_oauthlib.flow import InstalledAppFlow
             from google.auth.transport.requests import Request
+            import json as _json
 
             token_path = Path("config/token.json")
             credentials_path = Path(
                 os.getenv("GOOGLE_CREDENTIALS_FILE", "config/credentials.json")
             )
 
+            # Opção 2: arquivo token.json local
             if token_path.exists():
                 self.creds = Credentials.from_authorized_user_file(str(token_path), SCOPES)
+
+            # Opção 3: variável de ambiente GOOGLE_TOKEN_JSON (Streamlit Cloud)
+            if not self.creds:
+                token_json_str = os.getenv("GOOGLE_TOKEN_JSON", "")
+                if token_json_str:
+                    try:
+                        self.creds = Credentials.from_authorized_user_info(
+                            _json.loads(token_json_str), SCOPES
+                        )
+                        logger.info("Token OAuth2 carregado via GOOGLE_TOKEN_JSON (env).")
+                    except Exception as exc:
+                        logger.warning("Falha ao parsear GOOGLE_TOKEN_JSON: %s", exc)
 
             if not self.creds or not self.creds.valid:
                 if self.creds and self.creds.expired and self.creds.refresh_token:
@@ -100,22 +117,23 @@ class DriveManager:
                     if not credentials_path.exists():
                         logger.warning(
                             "Nenhuma credencial Google encontrada. "
-                            "Forneça config/service_account.json ou config/credentials.json"
+                            "Forneça config/service_account.json, config/token.json "
+                            "ou a secret GOOGLE_TOKEN_JSON."
                         )
                         return
                     flow = InstalledAppFlow.from_client_secrets_file(
                         str(credentials_path), SCOPES
                     )
-                    
-                    # --- CORREÇÃO 2: Forçar o link no terminal (sem abrir o Edge) ---
                     logger.info("=====================================================")
                     logger.info("⚠️ ATENÇÃO: Autenticação Manual Requerida")
                     logger.info("Copie o link abaixo e cole no CHROME para autorizar:")
                     logger.info("=====================================================")
                     self.creds = flow.run_local_server(port=0, open_browser=False)
 
-                with open(token_path, 'w') as token:
-                    token.write(self.creds.to_json())
+                # Salva token apenas se estivermos em ambiente local (arquivo existe)
+                if token_path.parent.exists() and not os.getenv("GOOGLE_TOKEN_JSON"):
+                    with open(token_path, 'w') as token:
+                        token.write(self.creds.to_json())
 
             self.service = build('drive', 'v3', credentials=self.creds)
             logger.info("✓ Google Drive conectado via OAuth2.")
