@@ -36,36 +36,204 @@ from dashboards.pricing_widget import (
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
-# MAPEAMENTOS DE LINGUAGEM NATURAL → CHAVES INTERNAS
+# NORMALIZAÇÃO — remove acentos, lowercase, espaços extras
+# Garante que "Vietnã", "Vietnam", "Viet Nam", "VIETNAM" → "vietnam"
 # ─────────────────────────────────────────────────────────────────────────────
 
-_PRODUTO_ALIAS: dict[str, str] = {
-    # soja
-    "soja": "SOY", "soy": "SOY", "soybeans": "SOY", "feijão de soja": "SOY",
-    # milho
-    "milho": "CORN", "corn": "CORN", "yellow corn": "CORN",
-    # açúcar
-    "açúcar": "SUGAR_VHP", "acucar": "SUGAR_VHP", "sugar": "SUGAR_VHP",
-    "vhp": "SUGAR_VHP", "sugar vhp": "SUGAR_VHP",
-    "ic45": "SUGAR_IC45", "icumsa 45": "SUGAR_IC45", "açúcar ic45": "SUGAR_IC45",
-    "ic150": "SUGAR_IC150", "icumsa 150": "SUGAR_IC150", "açúcar ic150": "SUGAR_IC150",
-}
+import unicodedata
+import re as _re
 
-_DESTINO_ALIAS: dict[str, str] = {
-    "china": "China", "china sul": "China", "china norte": "China",
-    "vietna": "Vietnã", "vietnã": "Vietnã", "vietnam": "Vietnã",
-    "indonesia": "Indonésia", "indonésia": "Indonésia",
-    "india": "Índia", "índia": "Índia",
-    "oriente médio": "Oriente Médio", "middle east": "Oriente Médio",
-    "gulf": "Oriente Médio", "golfo": "Oriente Médio", "golfo pérsico": "Oriente Médio",
-    "europa": "Europa NW", "rotterdam": "Europa NW", "europa nw": "Europa NW",
-    "norte europa": "Europa NW",
-    "egito": "Egito / N. África", "africa norte": "Egito / N. África",
-    "africa": "África Subsaariana", "africa subsaariana": "África Subsaariana",
-    "africa ocidental": "África Subsaariana", "west africa": "África Subsaariana",
-    "eua": "EUA / Golfo", "usa": "EUA / Golfo", "estados unidos": "EUA / Golfo",
-    "golfo mexico": "EUA / Golfo",
-}
+def _norm(s: str) -> str:
+    """Normaliza string: sem acento, lowercase, sem pontuação extra, sem espaços duplos."""
+    s = unicodedata.normalize("NFD", s)
+    s = "".join(c for c in s if unicodedata.category(c) != "Mn")  # remove diacríticos
+    s = s.lower().strip()
+    s = _re.sub(r"[^\w\s]", " ", s)   # pontuação → espaço
+    s = _re.sub(r"\s+", " ", s).strip()
+    return s
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MAPEAMENTOS DE LINGUAGEM NATURAL → CHAVES INTERNAS
+# Todas as chaves já ficam normalizadas para comparação rápida.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Produto: qualquer variação → chave interna
+_PRODUTO_ALIAS_RAW: list[tuple[str, str]] = [
+    # soja
+    ("soja",              "SOY"),
+    ("soy",               "SOY"),
+    ("soybeans",          "SOY"),
+    ("soybean",           "SOY"),
+    ("feijao de soja",    "SOY"),
+    ("yellow soybeans",   "SOY"),
+    # milho
+    ("milho",             "CORN"),
+    ("corn",              "CORN"),
+    ("yellow corn",       "CORN"),
+    ("maiz",              "CORN"),
+    # açúcar VHP (padrão)
+    ("acucar",            "SUGAR_VHP"),
+    ("sugar",             "SUGAR_VHP"),
+    ("vhp",               "SUGAR_VHP"),
+    ("sugar vhp",         "SUGAR_VHP"),
+    ("acucar vhp",        "SUGAR_VHP"),
+    ("acucar bruto",      "SUGAR_VHP"),
+    ("raw sugar",         "SUGAR_VHP"),
+    # açúcar IC45
+    ("ic45",              "SUGAR_IC45"),
+    ("icumsa 45",         "SUGAR_IC45"),
+    ("icumsa45",          "SUGAR_IC45"),
+    ("acucar ic45",       "SUGAR_IC45"),
+    ("acucar refinado",   "SUGAR_IC45"),
+    ("white sugar",       "SUGAR_IC45"),
+    # açúcar IC150
+    ("ic150",             "SUGAR_IC150"),
+    ("icumsa 150",        "SUGAR_IC150"),
+    ("icumsa150",         "SUGAR_IC150"),
+    ("acucar ic150",      "SUGAR_IC150"),
+    ("cristal",           "SUGAR_IC150"),
+    ("crystal sugar",     "SUGAR_IC150"),
+]
+# normaliza as chaves uma vez
+_PRODUTO_ALIAS: list[tuple[str, str]] = [(_norm(k), v) for k, v in _PRODUTO_ALIAS_RAW]
+
+
+# Destino: qualquer variação → destino canônico do sistema
+_DESTINO_ALIAS_RAW: list[tuple[str, str]] = [
+    # China
+    ("china",               "China"),
+    ("china sul",           "China"),
+    ("china norte",         "China"),
+    ("south china",         "China"),
+    ("north china",         "China"),
+    ("xangai",              "China"),
+    ("shanghai",            "China"),
+    ("guangzhou",           "China"),
+    ("qingdao",             "China"),
+    ("tianjin",             "China"),
+    # Vietnã — muitas grafias!
+    ("vietnam",             "Vietnã"),
+    ("vietna",              "Vietnã"),
+    ("viet nam",            "Vietnã"),
+    ("viet-nam",            "Vietnã"),
+    ("vietname",            "Vietnã"),
+    ("ho chi minh",         "Vietnã"),
+    ("haiphong",            "Vietnã"),
+    ("hanoi",               "Vietnã"),
+    # Indonésia
+    ("indonesia",           "Indonésia"),
+    ("indonecia",           "Indonésia"),
+    ("indonésia",           "Indonésia"),
+    ("jakarta",             "Indonésia"),
+    ("surabaya",            "Indonésia"),
+    # Índia
+    ("india",               "Índia"),
+    ("indie",               "Índia"),
+    ("índia",               "Índia"),
+    ("mumbai",              "Índia"),
+    ("kandla",              "Índia"),
+    ("chennai",             "Índia"),
+    ("nhava sheva",         "Índia"),
+    # Oriente Médio
+    ("oriente medio",       "Oriente Médio"),
+    ("oriente médio",       "Oriente Médio"),
+    ("middle east",         "Oriente Médio"),
+    ("golfo persico",       "Oriente Médio"),
+    ("golfo arabico",       "Oriente Médio"),
+    ("gulf",                "Oriente Médio"),
+    ("dubai",               "Oriente Médio"),
+    ("abu dhabi",           "Oriente Médio"),
+    ("oman",                "Oriente Médio"),
+    ("arabia saudita",      "Oriente Médio"),
+    ("saudi",               "Oriente Médio"),
+    ("kuwait",              "Oriente Médio"),
+    ("qatar",               "Oriente Médio"),
+    ("jeddah",              "Oriente Médio"),
+    ("dammam",              "Oriente Médio"),
+    ("ras al khaimah",      "Oriente Médio"),
+    # Europa
+    ("europa",              "Europa NW"),
+    ("europe",              "Europa NW"),
+    ("rotterdam",           "Europa NW"),
+    ("amsterdam",           "Europa NW"),
+    ("hamburgo",            "Europa NW"),
+    ("hamburg",             "Europa NW"),
+    ("antuérpia",           "Europa NW"),
+    ("antwerp",             "Europa NW"),
+    ("norte europa",        "Europa NW"),
+    ("north europe",        "Europa NW"),
+    ("europa nw",           "Europa NW"),
+    ("northwestern europe", "Europa NW"),
+    # Egito / Norte África
+    ("egito",               "Egito / N. África"),
+    ("egypt",               "Egito / N. África"),
+    ("africa norte",        "Egito / N. África"),
+    ("north africa",        "Egito / N. África"),
+    ("marrocos",            "Egito / N. África"),
+    ("morocco",             "Egito / N. África"),
+    ("tunisia",             "Egito / N. África"),
+    ("algeria",             "Egito / N. África"),
+    ("libia",               "Egito / N. África"),
+    ("alexandria",          "Egito / N. África"),
+    ("port said",           "Egito / N. África"),
+    # África Subsaariana
+    ("africa",              "África Subsaariana"),
+    ("africa subsaariana",  "África Subsaariana"),
+    ("west africa",         "África Subsaariana"),
+    ("africa ocidental",    "África Subsaariana"),
+    ("nigeria",             "África Subsaariana"),
+    ("gana",                "África Subsaariana"),
+    ("ghana",               "África Subsaariana"),
+    ("senegal",             "África Subsaariana"),
+    ("africa do sul",       "África Subsaariana"),
+    ("south africa",        "África Subsaariana"),
+    ("mocambique",          "África Subsaariana"),
+    ("angola",              "África Subsaariana"),
+    ("tanzania",            "África Subsaariana"),
+    ("quenia",              "África Subsaariana"),
+    ("kenya",               "África Subsaariana"),
+    # EUA / Golfo
+    ("eua",                 "EUA / Golfo"),
+    ("usa",                 "EUA / Golfo"),
+    ("estados unidos",      "EUA / Golfo"),
+    ("united states",       "EUA / Golfo"),
+    ("gulf of mexico",      "EUA / Golfo"),
+    ("new orleans",         "EUA / Golfo"),
+    ("houston",             "EUA / Golfo"),
+    ("new york",            "EUA / Golfo"),
+    ("baltimore",           "EUA / Golfo"),
+    ("norfolk",             "EUA / Golfo"),
+]
+# normaliza as chaves uma vez
+_DESTINO_ALIAS: list[tuple[str, str]] = [(_norm(k), v) for k, v in _DESTINO_ALIAS_RAW]
+
+
+def _match_destino(texto_norm: str) -> str | None:
+    """
+    Busca destino no texto normalizado.
+    Estratégia: primeiro match exato, depois match de substring (maior primeiro).
+    """
+    # 1. match exato
+    for k, v in _DESTINO_ALIAS:
+        if k == texto_norm:
+            return v
+    # 2. substring — ordena por tamanho decrescente (evita "india" casar antes de "arabia saudita")
+    for k, v in sorted(_DESTINO_ALIAS, key=lambda x: -len(x[0])):
+        if k in texto_norm:
+            return v
+    return None
+
+
+def _match_produto(texto_norm: str) -> str | None:
+    """Busca produto no texto normalizado — match exato primeiro, depois substring."""
+    for k, v in _PRODUTO_ALIAS:
+        if k == texto_norm:
+            return v
+    for k, v in sorted(_PRODUTO_ALIAS, key=lambda x: -len(x[0])):
+        if k in texto_norm:
+            return v
+    return None
 
 _PORTO_DEFAULT: dict[str, str] = {
     # produto → porto preferencial por rota/logística
@@ -95,20 +263,31 @@ def _parse_query_gemini(texto: str) -> dict:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel("gemini-1.5-flash")
         prompt = f"""
-Você é um assistente de trading de commodities agrícolas para exportação do Brasil.
-Analise a mensagem abaixo e extraia as informações em JSON puro (sem markdown, sem explicação).
+Voce e um assistente de trading de commodities agricolas para exportacao do Brasil.
+Analise a mensagem abaixo e extraia as informacoes em JSON puro (sem markdown, sem explicacao).
 
-Campos obrigatórios:
+IMPORTANTE — grafias incorretas ou variantes sao comuns. Normalize sempre:
+- "Vietnam", "Vietna", "Viet Nam", "Vietname", "Vietnã" → destino = "Vietnam"
+- "Indonesia", "Indonecia", "Indonésia" → destino = "Indonesia"
+- "India", "Indie", "Índia" → destino = "India"
+- "Egito", "Egypt", "Egipo" → destino = "Egito"
+- "China", "Xina", "PRC" → destino = "China"
+- "oriente medio", "middle east", "golfo" → destino = "Oriente Medio"
+- "Europa", "Europe", "Rotterdam" → destino = "Europa NW"
+- "EUA", "USA", "Estados Unidos" → destino = "EUA"
+- "Africa", "Africa Ocidental" → destino = "Africa"
+
+Campos:
 - "produto": um de [SOY, CORN, SUGAR_VHP, SUGAR_IC45, SUGAR_IC150] ou null
-- "incoterm": um de [EXW, FAS, FOB, CFR, CIF] ou null
-- "destino": cidade/país/região de destino (para CFR/CIF) ou null
-- "volume_mt": número inteiro em toneladas métricas (padrão 25000 se não informado)
-- "porto_br": porto brasileiro de embarque ou null
+- "incoterm": um de [EXW, FAS, FOB, CFR, CIF] ou null (padrao CIF se nao informado)
+- "destino": nome canonico do destino em portugues sem acento ou null
+- "volume_mt": inteiro em toneladas metricas (padrao 25000)
+- "porto_br": porto brasileiro de embarque (Santos, Paranagua, Outeiro, Itaqui) ou null
 
 Mensagem: "{texto}"
 
-Responda SOMENTE com o JSON, sem qualquer texto adicional.
-Exemplo: {{"produto":"SOY","incoterm":"CIF","destino":"Vietna","volume_mt":25000,"porto_br":null}}
+Responda SOMENTE com o JSON.
+Exemplo: {{"produto":"SOY","incoterm":"CIF","destino":"Vietnam","volume_mt":25000,"porto_br":null}}
 """
         resp = model.generate_content(prompt)
         raw = resp.text.strip().strip("```json").strip("```").strip()
@@ -125,38 +304,35 @@ Exemplo: {{"produto":"SOY","incoterm":"CIF","destino":"Vietna","volume_mt":25000
 
 
 def _parse_query_local(texto: str) -> dict:
-    """Parser de fallback sem IA — usa aliases e regex simples."""
-    t = texto.lower().strip()
+    """Parser de fallback sem IA — normaliza e usa aliases robustos."""
+    t = _norm(texto)
 
-    produto = None
-    for alias, key in _PRODUTO_ALIAS.items():
-        if alias in t:
-            produto = key
-            break
+    produto  = _match_produto(t)
+    destino  = _match_destino(t)
 
     incoterm = None
     for inc in ["aswp", "cif", "cfr", "fob", "fas", "exw"]:
-        if inc in t:
+        if inc in t.split():   # word-boundary: "cif" mas não "pacific"
             incoterm = inc.upper()
             break
+    # segunda passagem sem word boundary (captura "CIF" colado a outro texto)
+    if not incoterm:
+        for inc in ["cif", "cfr", "fob", "fas", "exw"]:
+            if inc in t:
+                incoterm = inc.upper()
+                break
     if not incoterm:
         incoterm = "CIF"
 
-    destino = None
-    for alias, key in _DESTINO_ALIAS.items():
-        if alias in t:
-            destino = key
-            break
-
-    # volume: procura padrão "25000" ou "25.000" ou "25k"
-    import re
+    # volume: "25000", "25.000", "25,000", "25k", "25 mil"
     vol = 25_000
-    m = re.search(r"(\d[\d.,]+)\s*(mt|ton|t\b|k\b)?", t)
+    m = _re.search(r"(\d[\d.,]*)\s*(mil\b|k\b|mt\b|ton\b|t\b)?", t)
     if m:
         raw_n = m.group(1).replace(".", "").replace(",", ".")
         try:
             n = float(raw_n)
-            if m.group(2) and "k" in (m.group(2) or ""):
+            sufixo = (m.group(2) or "").strip()
+            if sufixo in ("mil", "k"):
                 n *= 1_000
             if 100 <= n <= 500_000:
                 vol = int(n)
@@ -235,13 +411,8 @@ def _calcular_quick_quote(parsed: dict, snap: dict) -> dict | None:
 
     # Frete marítimo (para CFR / CIF)
     if incoterm in ("CFR", "CIF") and destino:
-        dest_key = _DESTINO_ALIAS.get(destino.lower(), destino)
-        if dest_key not in _DEST_KEYS:
-            # tenta match parcial
-            for k, v in _DESTINO_ALIAS.items():
-                if k in destino.lower():
-                    dest_key = v
-                    break
+        # normaliza o destino (captura qualquer grafia)
+        dest_key = _match_destino(_norm(destino)) or destino
         if dest_key in _DEST_KEYS or dest_key in list(_DEST_KEYS.values()):
             # normaliza para label correto
             dest_label = dest_key if dest_key in _DEST_KEYS else next(
