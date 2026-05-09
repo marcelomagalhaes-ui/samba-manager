@@ -32,6 +32,7 @@ pandas==2.2.3
 openpyxl==3.1.5
 yfinance==0.2.61
 numpy==1.26.4
+python-docx==1.1.2
 
 # Scheduling & Eventing
 celery==5.5.2
