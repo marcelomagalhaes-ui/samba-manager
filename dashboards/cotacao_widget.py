@@ -69,11 +69,11 @@ _SUINA: list[dict] = [
 
 # ─── Basis operacional por porto (USD/MT) — fallback quando API offline ────────
 _BASIS_DEFAULTS: dict[str, dict[str, float]] = {
-    "SOY":        {"PGROSSA": -2.80, "SANTOS": -3.20, "BARCARENA": -1.60, "SALINOPOLIS": -1.80},
-    "SOYMEAL":    {"PGROSSA": -15.0, "SANTOS": -16.0, "BARCARENA": -12.0},
-    "CORN":       {"PGROSSA": -3.50, "SANTOS": -4.00, "BARCARENA": -2.50, "SALINOPOLIS": -2.80},
-    "SUGAR_VHP":  {"SANTOS":   0.50, "PGROSSA":  0.00, "BARCARENA":  0.30},
-    "SUGAR_IC45": {"SANTOS":   0.50, "PGROSSA":  0.00, "BARCARENA":  0.30},
+    "SOY":        {"PARANAGUA": -2.80, "SANTOS": -3.20, "BARCARENA": -1.60, "SALINOPOLIS": -1.80},
+    "SOYMEAL":    {"PARANAGUA": -15.0, "SANTOS": -16.0, "BARCARENA": -12.0},
+    "CORN":       {"PARANAGUA": -3.50, "SANTOS": -4.00, "BARCARENA": -2.50, "SALINOPOLIS": -2.80},
+    "SUGAR_VHP":  {"SANTOS":   0.50, "PARANAGUA":  0.00, "BARCARENA":  0.30},
+    "SUGAR_IC45": {"SANTOS":   0.50, "PARANAGUA":  0.00, "BARCARENA":  0.30},
 }
 
 # ─── Destinos CIF com frete Panamax/Supramax de referência (USD/MT) ────────────

@@ -492,9 +492,13 @@ if not st.session_state.authenticated:
     st.stop()
 
 # FAB -- CALCULADORA SAMBA  (components.html injector)
-import streamlit.components.v1 as _stcomp
-_fab_html = (ROOT / 'assets' / 'fab_injector.html').read_text(encoding='utf-8')
-_stcomp.html(_fab_html, height=0, scrolling=False)
+try:
+    import streamlit.components.v1 as _stcomp
+    _fab_path = ROOT / 'assets' / 'fab_injector.html'
+    if _fab_path.exists():
+        _stcomp.html(_fab_path.read_text(encoding='utf-8'), height=0, scrolling=False)
+except Exception:
+    pass
 
 if st.session_state.current_view == "portal":
     _show_portal()

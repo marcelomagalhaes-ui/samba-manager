@@ -866,11 +866,12 @@ def render_quick_quote():
         with ca:
             if st.button("Cotacao Completa", key="qq_act_form", use_container_width=True):
                 # pre-preenche os campos do form de pricing
+                # px_prod deve ser a chave do produto (string), não o índice
                 prod_key = r.get("produto_key", "SOY")
                 porto_lbl = r.get("porto_label", list(_PORTOS.keys())[0])
-                st.session_state["px_prod"]  = list(_PRODUTOS.keys()).index(prod_key) \
-                    if prod_key in _PRODUTOS else 0
-                st.session_state["px_vol"]   = float(r["volume_mt"])
+                st.session_state["px_prod"]     = prod_key if prod_key in _PRODUTOS else "SOY"
+                st.session_state["px_porto"]    = porto_lbl
+                st.session_state["px_vol"]      = float(r["volume_mt"])
                 st.session_state["qq_switch_to_form"] = True
                 st.rerun()
 

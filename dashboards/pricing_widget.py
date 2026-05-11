@@ -54,85 +54,102 @@ _PRODUTOS = {
 # PORTOS BRASILEIROS — elevação real (tb_elevacao_portuaria_br.csv)
 # ─────────────────────────────────────────────────────────────────────────────
 _PORTOS = {
-    # ARCO NORTE
+    # ── ARCO NORTE ─────────────────────────────────────────────────────────────
+    # Basis soy/corn: historico_basis_portos_corn_soy.csv (mai/2026)
+    # Elev: tb_elevacao_portuaria_br.csv
+    # Basis sugar: historico_basis_portos_acucar.csv (valores NE estimados)
     "Outeiro (Belém/PA)": {
-        "code": "BELEM",   "uf": "PA", "regiao": "Arco Norte",
-        "basis_soy": 12,   "basis_corn": 10, "basis_sugar": 43,
-        "elev_usd": 14.0,  "sugar_porto": False,
+        "code": "BELEM",    "uf": "PA", "regiao": "Arco Norte",
+        "basis_soy": 13.3,  "basis_corn": 17.1,  "basis_sugar": 44.0,
+        "elev_usd": 14.0,   "sugar_porto": False,
+        # basis ≈ BARCARENA + 0.0 (portos próximos, mesmo hub)
     },
     "Barcarena (PA)": {
         "code": "BARCARENA","uf": "PA", "regiao": "Arco Norte",
-        "basis_soy": 11,   "basis_corn": 9,  "basis_sugar": 42,
-        "elev_usd": 15.0,  "sugar_porto": False,
+        "basis_soy": 13.3,  "basis_corn": 17.0,  "basis_sugar": 44.0,
+        "elev_usd": 15.0,   "sugar_porto": False,
+        # fonte CSV: SOY=13.28 CORN=16.98
     },
     "Santarém (PA)": {
-        "code": "SANTAREM","uf": "PA", "regiao": "Arco Norte",
-        "basis_soy": 10,   "basis_corn": 8,  "basis_sugar": 41,
-        "elev_usd": 14.5,  "sugar_porto": False,
+        "code": "SANTAREM", "uf": "PA", "regiao": "Arco Norte",
+        "basis_soy": 12.5,  "basis_corn": 16.0,  "basis_sugar": 43.0,
+        "elev_usd": 14.5,   "sugar_porto": False,
+        # estimado ≈ BARCARENA − 0.8 (rio acima, custo interno adicional)
     },
     "Miritituba (PA)": {
-        "code": "MIRITITUBA","uf":"PA","regiao": "Arco Norte",
-        "basis_soy": 10,   "basis_corn": 8,  "basis_sugar": 40,
-        "elev_usd": 5.0,   "sugar_porto": False,
-        "obs": "Transbordo hidroviário",
+        "code": "MIRITITUBA","uf": "PA","regiao": "Arco Norte",
+        "basis_soy": 11.5,  "basis_corn": 15.0,  "basis_sugar": 42.0,
+        "elev_usd": 5.0,    "sugar_porto": False,
+        "obs": "Transbordo hidroviário — elev reduzida",
     },
     "Itacoatiara (AM)": {
-        "code": "ITACOATIARA","uf":"AM","regiao": "Arco Norte",
-        "basis_soy": 9,    "basis_corn": 7,  "basis_sugar": 39,
-        "elev_usd": 10.0,  "sugar_porto": False,
+        "code": "ITACOATIARA","uf": "AM","regiao": "Arco Norte",
+        "basis_soy": 12.0,  "basis_corn": 15.5,  "basis_sugar": 42.0,
+        "elev_usd": 10.0,   "sugar_porto": False,
+        # estimado ≈ BARCARENA − 1.3 (frete hidroviário adicional)
     },
     "Itaqui (MA)": {
-        "code": "ITAQUI",  "uf": "MA", "regiao": "Nordeste",
-        "basis_soy": 8,    "basis_corn": 7,  "basis_sugar": 42,
-        "elev_usd": 11.0,  "sugar_porto": False,
+        "code": "ITAQUI",   "uf": "MA", "regiao": "Nordeste",
+        "basis_soy": 14.0,  "basis_corn": 17.7,  "basis_sugar": 44.0,
+        "elev_usd": 11.0,   "sugar_porto": False,
+        # fonte CSV: SOY=13.98 CORN=17.68
     },
-    # SUL / SUDESTE
+    # ── SUL / SUDESTE ───────────────────────────────────────────────────────────
     "Paranaguá (PR)": {
         "code": "PARANAGUA","uf": "PR", "regiao": "Sul",
-        "basis_soy": 5,    "basis_corn": 4,  "basis_sugar": 38,
-        "elev_usd": 13.0,  "sugar_porto": True,
+        "basis_soy": 11.1,  "basis_corn": 14.8,  "basis_sugar": 38.9,
+        "elev_usd": 13.0,   "sugar_porto": True,
+        # fonte CSV: SOY=11.08 CORN=14.78 SUGAR_VHP=38.86
     },
     "Santos (SP)": {
-        "code": "SANTOS",  "uf": "SP", "regiao": "Sudeste",
-        "basis_soy": 6,    "basis_corn": 5,  "basis_sugar": 40,
-        "elev_usd": 14.0,  "sugar_porto": True,
+        "code": "SANTOS",   "uf": "SP", "regiao": "Sudeste",
+        "basis_soy": 12.9,  "basis_corn": 16.6,  "basis_sugar": 40.9,
+        "elev_usd": 14.0,   "sugar_porto": True,
+        # fonte CSV: SOY=12.88 CORN=16.58 SUGAR_VHP=40.86
     },
     "São Francisco (SC)": {
-        "code": "SAO_FRANCISCO_SUL","uf":"SC","regiao":"Sul",
-        "basis_soy": 4,    "basis_corn": 3,  "basis_sugar": 36,
-        "elev_usd": 12.5,  "sugar_porto": False,
+        "code": "SAO_FRANCISCO_SUL","uf": "SC","regiao": "Sul",
+        "basis_soy": 10.5,  "basis_corn": 14.1,  "basis_sugar": 37.0,
+        "elev_usd": 12.5,   "sugar_porto": False,
+        # estimado ≈ PARANAGUA − 0.6 (menor terminal)
     },
     "Rio Grande (RS)": {
         "code": "RIO_GRANDE","uf": "RS", "regiao": "Sul",
-        "basis_soy": 3,    "basis_corn": 3,  "basis_sugar": 36,
-        "elev_usd": 13.5,  "sugar_porto": False,
+        "basis_soy": 10.4,  "basis_corn": 14.1,  "basis_sugar": 37.0,
+        "elev_usd": 13.5,   "sugar_porto": False,
+        # fonte CSV: SOY=10.38 CORN=14.08
     },
     "Vitória (ES)": {
-        "code": "VITORIA", "uf": "ES", "regiao": "Sudeste",
-        "basis_soy": 5,    "basis_corn": 4,  "basis_sugar": 38,
-        "elev_usd": 12.0,  "sugar_porto": False,
+        "code": "VITORIA",  "uf": "ES", "regiao": "Sudeste",
+        "basis_soy": 12.0,  "basis_corn": 15.5,  "basis_sugar": 38.0,
+        "elev_usd": 12.0,   "sugar_porto": False,
+        # estimado ≈ SANTOS − 0.9 (menor liquidez)
     },
-    # NORDESTE / AÇÚCAR
+    # ── NORDESTE / AÇÚCAR ──────────────────────────────────────────────────────
     "Maceió (AL)": {
-        "code": "MACEIO",  "uf": "AL", "regiao": "Nordeste",
-        "basis_soy": 6,    "basis_corn": 5,  "basis_sugar": 46,
-        "elev_usd": 12.0,  "sugar_porto": True,
+        "code": "MACEIO",   "uf": "AL", "regiao": "Nordeste",
+        "basis_soy": 13.5,  "basis_corn": 17.5,  "basis_sugar": 45.9,
+        "elev_usd": 12.0,   "sugar_porto": True,
         "obs": "Principal porto açúcar VHP/IC45",
+        # fonte CSV sugar: SUGAR_VHP=45.86
     },
     "Recife (PE)": {
-        "code": "RECIFE",  "uf": "PE", "regiao": "Nordeste",
-        "basis_soy": 6,    "basis_corn": 5,  "basis_sugar": 46,
-        "elev_usd": 12.0,  "sugar_porto": True,
+        "code": "RECIFE",   "uf": "PE", "regiao": "Nordeste",
+        "basis_soy": 13.5,  "basis_corn": 17.5,  "basis_sugar": 45.9,
+        "elev_usd": 12.0,   "sugar_porto": True,
+        # fonte CSV sugar: SUGAR_VHP=45.86
     },
     "Salvador (BA)": {
-        "code": "SALVADOR","uf": "BA", "regiao": "Nordeste",
-        "basis_soy": 6,    "basis_corn": 5,  "basis_sugar": 42,
-        "elev_usd": 14.0,  "sugar_porto": False,
+        "code": "SALVADOR", "uf": "BA", "regiao": "Nordeste",
+        "basis_soy": 13.0,  "basis_corn": 17.0,  "basis_sugar": 42.0,
+        "elev_usd": 14.0,   "sugar_porto": False,
+        # estimado ≈ ITAQUI − 1.0
     },
     "Pecém (CE)": {
-        "code": "PECEM",   "uf": "CE", "regiao": "Nordeste",
-        "basis_soy": 7,    "basis_corn": 6,  "basis_sugar": 43,
-        "elev_usd": 12.0,  "sugar_porto": False,
+        "code": "PECEM",    "uf": "CE", "regiao": "Nordeste",
+        "basis_soy": 14.0,  "basis_corn": 17.7,  "basis_sugar": 44.0,
+        "elev_usd": 12.0,   "sugar_porto": False,
+        # estimado ≈ ITAQUI (hub NE similar)
     },
 }
 
@@ -513,7 +530,7 @@ def _navio_para_porto_volume(volume_mt: float, porto_code: str) -> str:
 
 def _get_dist_nm(porto_code: str, destino: str) -> int:
     base_code, offset = _PORTO_DIST_MAP.get(porto_code, ("SANTOS", 0))
-    dest_key = _DEST_KEYS.get(destino, "China")
+    dest_key = _DEST_KEYS.get(destino, "China_N")   # China_N como fallback válido
     base = _DIST_BASE.get(base_code, _DIST_BASE["SANTOS"])
     return int(base.get(dest_key, 10_000) + offset)
 
@@ -547,8 +564,12 @@ def _calcular_frete_maritimo(porto_code: str, destino: str, volume: float,
     sea_days     = dist_nm / (speed_knots * 24)
     ballast_days = sea_days * 0.95   # lastro: ligeiramente mais rápido
 
+    # Resolve chave curta do destino (ex: "Vietnã — Ho Chi Minh" → "Vietnam")
+    # Necessário porque _DISCH_RATES/_CONGESTION_DEST/_PDA_DISCH usam chaves curtas
+    dest_key = _DEST_KEYS.get(destino, destino)   # fallback: usa label como está
+
     load_rate  = _LOAD_RATES.get(porto_code, 20_000)
-    disch_rate = _DISCH_RATES.get(destino, 18_000)
+    disch_rate = _DISCH_RATES.get(dest_key, 18_000)
     loading_days = cargo_per_voyage / load_rate
     disch_days   = cargo_per_voyage / disch_rate
 
@@ -556,7 +577,7 @@ def _calcular_frete_maritimo(porto_code: str, destino: str, volume: float,
     month = datetime.now().month
     harvest_factor   = 1.5 if 3 <= month <= 8 else 1.0
     congestion_orig  = _CONGESTION_ORIGIN.get(porto_code, 4.0) * harvest_factor
-    congestion_dest  = _CONGESTION_DEST.get(destino, 3.0)
+    congestion_dest  = _CONGESTION_DEST.get(dest_key, 3.0)
     congestion_days  = congestion_orig + congestion_dest
 
     # ── VERSÃO MÍNIMA (somente perna de ida — sem lastro de retorno) ──────────
@@ -564,7 +585,7 @@ def _calcular_frete_maritimo(porto_code: str, destino: str, volume: float,
     fuel_sea_min   = sea_days * consumo_mar * bunker
     fuel_port_min  = (loading_days + disch_days + congestion_days) * consumo_port * bunker
     hire_min       = total_days_min * daily_hire
-    pda_per_mt     = _PDA_LOAD.get(porto_code, 0.60) + _PDA_DISCH.get(destino, 0.60)
+    pda_per_mt     = _PDA_LOAD.get(porto_code, 0.60) + _PDA_DISCH.get(dest_key, 0.60)
     pda_total      = pda_per_mt * cargo_per_voyage
     op_cost_min    = (fuel_sea_min + fuel_port_min + hire_min) * _MARGEM_ARMADOR
     freight_min_mt = (op_cost_min + pda_total) / cargo_per_voyage

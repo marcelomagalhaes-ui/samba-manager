@@ -434,16 +434,17 @@ def render_loi_widget() -> None:
 
     # Origem — visível apenas para Sugar e VegOil
     origin_country = None
-    if code in ("SUGAR", "VEGOIL"):
+    extra = com.get("extra_rules") or {}
+    if code in ("SUGAR", "VEGOIL") and extra.get("origin_options"):
         oc1, _ = st.columns([1, 2])
         with oc1:
             origin_country = st.selectbox(
                 "Origem do Produto",
-                com["extra_rules"]["origin_options"],
+                extra["origin_options"],
                 key="loi_origin",
             )
         if code == "SUGAR" and origin_country and origin_country != "Brazil":
-            st.warning(f"Atenção: {com['extra_rules']['non_brazil_alert']}")
+            st.warning(f"Atenção: {extra.get('non_brazil_alert', '')}")
 
     st.divider()
 
