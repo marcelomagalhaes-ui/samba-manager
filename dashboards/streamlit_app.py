@@ -3164,47 +3164,48 @@ with abas[5]:
 # ─────────────────────────────────────────────────────────────────
 # ABA 7 — FOLLOW-UPS
 # ─────────────────────────────────────────────────────────────────
+@st.cache_data(ttl=30)
+def _load_followups():
+    try:
+        with engine.connect() as _conn:
+            rows = _conn.execute(sqlalchemy.text("""
+                SELECT
+                    f.id,
+                    f.deal_id,
+                    d.name          AS deal_name,
+                    d.commodity,
+                    d.assignee,
+                    d.source_group,
+                    f.target_person,
+                    f.target_group,
+                    f.status,
+                    f.due_at,
+                    f.sent_at,
+                    f.created_at,
+                    f.response_received,
+                    f.response_content,
+                    f.message
+                FROM followups f
+                LEFT JOIN deals d ON d.id = f.deal_id
+                ORDER BY
+                    CASE f.status
+                        WHEN 'pendente'   THEN 0
+                        WHEN 'enviado'    THEN 1
+                        WHEN 'respondido' THEN 2
+                        WHEN 'expirado'   THEN 3
+                        ELSE 4
+                    END,
+                    f.due_at ASC
+                LIMIT 200
+            """)).fetchall()
+            return [dict(r._mapping) for r in rows]
+    except Exception:
+        return []
+
+
 with abas[6]:
     st.markdown('<div class="section-title">FOLLOW-UPS — GESTÃO DE CONTATOS E COBRANÇAS</div>', unsafe_allow_html=True)
     st.caption("Agenda de cobranças enriquecida com dados da planilha (comprador, produto, responsável, contexto do deal).")
-
-    @st.cache_data(ttl=30)
-    def _load_followups():
-        try:
-            with engine.connect() as _conn:
-                rows = _conn.execute(sqlalchemy.text("""
-                    SELECT
-                        f.id,
-                        f.deal_id,
-                        d.name          AS deal_name,
-                        d.commodity,
-                        d.assignee,
-                        d.source_group,
-                        f.target_person,
-                        f.target_group,
-                        f.status,
-                        f.due_at,
-                        f.sent_at,
-                        f.created_at,
-                        f.response_received,
-                        f.response_content,
-                        f.message
-                    FROM followups f
-                    LEFT JOIN deals d ON d.id = f.deal_id
-                    ORDER BY
-                        CASE f.status
-                            WHEN 'pendente'   THEN 0
-                            WHEN 'enviado'    THEN 1
-                            WHEN 'respondido' THEN 2
-                            WHEN 'expirado'   THEN 3
-                            ELSE 4
-                        END,
-                        f.due_at ASC
-                    LIMIT 200
-                """)).fetchall()
-                return [dict(r._mapping) for r in rows]
-        except Exception:
-            return []
 
     _fu_rows   = _load_followups()
     _enrich_idx = _sheet_enrich_index()   # PROC V: grupo_norm → sheet deal
@@ -3403,39 +3404,40 @@ with abas[6]:
 # ─────────────────────────────────────────────────────────────────
 # ABA 8 — COMPLIANCE DOCUMENTAL 🔏
 # ─────────────────────────────────────────────────────────────────
+@st.cache_data(ttl=60)
+def _load_compliance_records() -> list[dict]:
+    try:
+        from models.database import DocumentCompliance, get_session
+        sess = get_session()
+        records = sess.query(DocumentCompliance).order_by(DocumentCompliance.audited_at.desc()).limit(200).all()
+        sess.close()
+        return [
+            {
+                "id": r.id,
+                "deal_id": r.deal_id,
+                "file_name": r.file_name or "—",
+                "document_type": r.document_type or "—",
+                "commodity": r.commodity or "—",
+                "status": r.status or "—",
+                "score": r.score or 0,
+                "critical_issues": r.critical_issues or 0,
+                "missing_clauses_count": r.missing_clauses_count or 0,
+                "spec_divergences_count": r.spec_divergences_count or 0,
+                "summary": r.summary or "",
+                "report_json": r.report_json or "{}",
+                "audited_at": r.audited_at.strftime("%d/%m/%Y %H:%M") if r.audited_at else "—",
+            }
+            for r in records
+        ]
+    except Exception:
+        return []
+
+
 with abas[7]:
     st.markdown('<div class="section-title">COMPLIANCE DOCUMENTAL — ICC/UCP 600</div>', unsafe_allow_html=True)
     st.caption("Auditoria de documentos contra clausulas obrigatorias ICC, UCP 600 (Art. 2, 14, 18, 20, 28), Incoterms 2020 e specs tecnicas de commodities.")
 
     # ── Carregar auditorias do banco ───────────────────────────────
-    @st.cache_data(ttl=60)
-    def _load_compliance_records() -> list[dict]:
-        try:
-            from models.database import DocumentCompliance, get_session
-            sess = get_session()
-            records = sess.query(DocumentCompliance).order_by(DocumentCompliance.audited_at.desc()).limit(200).all()
-            sess.close()
-            return [
-                {
-                    "id": r.id,
-                    "deal_id": r.deal_id,
-                    "file_name": r.file_name or "—",
-                    "document_type": r.document_type or "—",
-                    "commodity": r.commodity or "—",
-                    "status": r.status or "—",
-                    "score": r.score or 0,
-                    "critical_issues": r.critical_issues or 0,
-                    "missing_clauses_count": r.missing_clauses_count or 0,
-                    "spec_divergences_count": r.spec_divergences_count or 0,
-                    "summary": r.summary or "",
-                    "report_json": r.report_json or "{}",
-                    "audited_at": r.audited_at.strftime("%d/%m/%Y %H:%M") if r.audited_at else "—",
-                }
-                for r in records
-            ]
-        except Exception:
-            return []
-
     compliance_records = _load_compliance_records()
 
     # ── KPIs ───────────────────────────────────────────────────────
@@ -3597,6 +3599,35 @@ with abas[7]:
 # ─────────────────────────────────────────────────────────────────
 # ABA 9 — SAMBA ASSISTANT (Conversational Hub com Tool Calling)
 # ─────────────────────────────────────────────────────────────────
+@st.cache_data(ttl=10)
+def _load_pending_approvals() -> list[dict]:
+    try:
+        from models.database import PendingApproval, get_session
+        sess = get_session()
+        try:
+            rows = (
+                sess.query(PendingApproval)
+                .filter(PendingApproval.status == "pending")
+                .order_by(PendingApproval.created_at.desc())
+                .limit(20)
+                .all()
+            )
+            return [
+                {
+                    "id":           r.id,
+                    "action_type":  r.action_type,
+                    "description":  r.description or "",
+                    "requested_by": r.requested_by or "Agente",
+                    "created_at":   r.created_at.strftime("%d/%m %H:%M") if r.created_at else "—",
+                }
+                for r in rows
+            ]
+        finally:
+            sess.close()
+    except Exception:
+        return []
+
+
 with abas[8]:
     st.markdown('<div class="section-title">SAMBA ASSISTANT — CONVERSATIONAL HUB</div>', unsafe_allow_html=True)
     st.caption(
@@ -3666,34 +3697,6 @@ with abas[8]:
             _qa_inject = "Liste todas as pendências e action items críticos ou altos em aberto."
 
     # ── Fila HITL — Aprovações pendentes ───────────────────────────
-    @st.cache_data(ttl=10)
-    def _load_pending_approvals() -> list[dict]:
-        try:
-            from models.database import PendingApproval, get_session
-            sess = get_session()
-            try:
-                rows = (
-                    sess.query(PendingApproval)
-                    .filter(PendingApproval.status == "pending")
-                    .order_by(PendingApproval.created_at.desc())
-                    .limit(20)
-                    .all()
-                )
-                return [
-                    {
-                        "id":           r.id,
-                        "action_type":  r.action_type,
-                        "description":  r.description or "",
-                        "requested_by": r.requested_by or "Agente",
-                        "created_at":   r.created_at.strftime("%d/%m %H:%M") if r.created_at else "—",
-                    }
-                    for r in rows
-                ]
-            finally:
-                sess.close()
-        except Exception:
-            return []
-
     _pending = _load_pending_approvals()
     if _pending:
         st.markdown(
