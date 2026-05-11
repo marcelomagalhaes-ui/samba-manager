@@ -3921,83 +3921,90 @@ with abas[8]:
                     placeholder.error(f"Erro no Assistant: {e}")
 
 # ─────────────────────────────────────────────────────────────────
+# ABA 10 — BASE DE CONHECIMENTO — helpers (nivel de modulo)
+# IMPORTANTE: definidas FORA do with abas[9] para evitar que
+# inspect.getsource (chamado por @st.cache_data) leia ate o EOF
+# e falhe com "EOF in multi-line statement".
+# ─────────────────────────────────────────────────────────────────
+
+@st.cache_data(ttl=30)
+def _kb_stats():
+    """Carrega estatisticas da tabela corporate_knowledge."""
+    from models.database import CorporateKnowledge, get_session
+    s = get_session()
+    try:
+        rows = s.query(CorporateKnowledge).all()
+        total_chunks  = len(rows)
+        total_tokens  = sum(r.token_count or 0 for r in rows)
+        n_with_embed  = sum(1 for r in rows if r.embedding and r.embedding != "null")
+        from collections import defaultdict
+        doc_agg = defaultdict(lambda: {"chunks": 0, "tokens": 0})
+        for r in rows:
+            doc_agg[r.document_name or "sem nome"]["chunks"] += 1
+            doc_agg[r.document_name or "sem nome"]["tokens"] += r.token_count or 0
+        return {
+            "total_chunks":  total_chunks,
+            "total_tokens":  total_tokens,
+            "n_with_embed":  n_with_embed,
+            "n_docs":        len(doc_agg),
+            "doc_table":     sorted(doc_agg.items(), key=lambda x: x[1]["chunks"], reverse=True),
+        }
+    except Exception:
+        return {"total_chunks": 0, "total_tokens": 0, "n_with_embed": 0, "n_docs": 0, "doc_table": []}
+    finally:
+        s.close()
+
+
+@st.cache_data(ttl=15)
+def _drive_sync_status():
+    """Carrega estado do canal Drive Watch e page token."""
+    from models.database import DriveSyncState, get_session
+    from datetime import datetime, timezone
+    try:
+        s = get_session()
+    except Exception:
+        return {"channel_id": "N/A", "resource_id": "N/A", "page_token": "N/A",
+                "exp_str": "N/A", "exp_color": "var(--samba-dim)", "days_left": None}
+    try:
+        def _get(key):
+            try:
+                row = s.query(DriveSyncState).filter_by(key=key).first()
+                return row.value if row else None
+            except Exception:
+                return None
+
+        channel_id   = _get("drive_channel_id")   or "N/A"
+        resource_id  = _get("drive_resource_id")  or "N/A"
+        page_token   = _get("changes_page_token") or "N/A"
+        exp_ms_str   = _get("drive_channel_expiration_ms")
+        exp_str      = "N/A"
+        exp_color    = "var(--samba-dim)"
+        days_left    = None
+
+        if exp_ms_str and exp_ms_str.isdigit():
+            exp_dt    = datetime.fromtimestamp(int(exp_ms_str) / 1000, tz=timezone.utc)
+            days_left = (exp_dt - datetime.now(timezone.utc)).days
+            exp_str   = exp_dt.strftime("%Y-%m-%d %H:%M UTC")
+            exp_color = "#fa3232" if days_left <= 2 else ("#fa8200" if days_left <= 4 else "#329632")
+
+        return {
+            "channel_id":  channel_id,
+            "resource_id": resource_id,
+            "page_token":  page_token,
+            "exp_str":     exp_str,
+            "exp_color":   exp_color,
+            "days_left":   days_left,
+        }
+    finally:
+        s.close()
+
+
+# ─────────────────────────────────────────────────────────────────
 # ABA 10 — BASE DE CONHECIMENTO
 # ─────────────────────────────────────────────────────────────────
 with abas[9]:
     st.markdown('<div class="section-title">BASE DE CONHECIMENTO — CEREBRO VETORIAL RAG</div>', unsafe_allow_html=True)
     st.caption("Status em tempo real do CorporateKnowledge + sincronizacao Drive + busca semantica ao vivo.")
-
-    # ── helpers locais ───────────────────────────────────────────
-    @st.cache_data(ttl=30)
-    def _kb_stats():
-        """Carrega estatisticas da tabela corporate_knowledge."""
-        from models.database import CorporateKnowledge, get_session
-        import json as _json
-        s = get_session()
-        try:
-            rows = s.query(CorporateKnowledge).all()
-            total_chunks  = len(rows)
-            total_tokens  = sum(r.token_count or 0 for r in rows)
-            n_with_embed  = sum(1 for r in rows if r.embedding and r.embedding != "null")
-            from collections import defaultdict
-            doc_agg = defaultdict(lambda: {"chunks": 0, "tokens": 0})
-            for r in rows:
-                doc_agg[r.document_name or "—"]["chunks"] += 1
-                doc_agg[r.document_name or "—"]["tokens"] += r.token_count or 0
-            return {
-                "total_chunks":  total_chunks,
-                "total_tokens":  total_tokens,
-                "n_with_embed":  n_with_embed,
-                "n_docs":        len(doc_agg),
-                "doc_table":     sorted(doc_agg.items(), key=lambda x: x[1]["chunks"], reverse=True),
-            }
-        except Exception:
-            return {"total_chunks": 0, "total_tokens": 0, "n_with_embed": 0, "n_docs": 0, "doc_table": []}
-        finally:
-            s.close()
-
-    @st.cache_data(ttl=15)
-    def _drive_sync_status():
-        """Carrega estado do canal Drive Watch e page token."""
-        from models.database import DriveSyncState, get_session
-        from datetime import datetime, timezone
-        try:
-            s = get_session()
-        except Exception:
-            return {"channel_id": "—", "resource_id": "—", "page_token": "—",
-                    "exp_str": "—", "exp_color": "var(--samba-dim)", "days_left": None}
-        try:
-            def _get(key):
-                try:
-                    row = s.query(DriveSyncState).filter_by(key=key).first()
-                    return row.value if row else None
-                except Exception:
-                    return None
-
-            channel_id   = _get("drive_channel_id")   or "—"
-            resource_id  = _get("drive_resource_id")  or "—"
-            page_token   = _get("changes_page_token") or "—"
-            exp_ms_str   = _get("drive_channel_expiration_ms")
-            exp_str      = "—"
-            exp_color    = "var(--samba-dim)"
-            days_left    = None
-
-            if exp_ms_str and exp_ms_str.isdigit():
-                exp_dt   = datetime.fromtimestamp(int(exp_ms_str) / 1000, tz=timezone.utc)
-                days_left = (exp_dt - datetime.now(timezone.utc)).days
-                exp_str  = exp_dt.strftime("%Y-%m-%d %H:%M UTC")
-                exp_color = "#fa3232" if days_left <= 2 else ("#fa8200" if days_left <= 4 else "#329632")
-
-            return {
-                "channel_id":  channel_id,
-                "resource_id": resource_id,
-                "page_token":  page_token,
-                "exp_str":     exp_str,
-                "exp_color":   exp_color,
-                "days_left":   days_left,
-            }
-        finally:
-            s.close()
 
     # ── KPI row ──────────────────────────────────────────────────
     kb = _kb_stats()
