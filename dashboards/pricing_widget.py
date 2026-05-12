@@ -327,6 +327,33 @@ _DEST_KEYS = {
 
 _DESTINOS_CIF = list(_DEST_KEYS.keys())
 
+# ── Agrupamento regional para UI do seletor CIF ──────────────────────────────
+_DEST_GRUPOS = {
+    "🌏 Ásia":          [
+        "China — Shanghai / Norte", "China — Guangzhou / Sul",
+        "Vietnã — Ho Chi Minh", "Indonésia — Jakarta",
+        "Índia — Mundra / Kandla", "Índia — Chennai / Leste",
+        "Coreia do Sul — Busan", "Japão — Yokohama",
+        "Malásia — Port Klang", "Tailândia — Laem Chabang",
+        "Singapura", "Sri Lanka — Colombo",
+    ],
+    "🕌 Oriente Médio": [
+        "Arábia Saudita — Jeddah", "Golfo Pérsico — Dubai / EAU",
+    ],
+    "🌍 África": [
+        "Egito — Alexandria", "Marrocos — Tânger",
+        "Nigéria — Lagos", "Gana — Tema", "África do Sul — Durban",
+    ],
+    "🇪🇺 Europa": [
+        "Europa NW — Rotterdam", "Mediterrâneo — Valencia", "Grécia — Pireu",
+    ],
+    "🌎 Américas": [
+        "EUA — Golfo (New Orleans)", "EUA — Costa Leste (Norfolk)",
+        "Canadá — Vancouver", "México — Veracruz",
+        "Argentina — Rosário", "Chile — San Antonio",
+    ],
+}
+
 # ─────────────────────────────────────────────────────────────────────────────
 # TAXAS DE CARREGAMENTO (t/dia) — tb_handbook_ports.csv
 # ─────────────────────────────────────────────────────────────────────────────
@@ -635,6 +662,7 @@ def _calcular_frete_maritimo(porto_code: str, destino: str, volume: float,
 # DATA LAYER
 # ─────────────────────────────────────────────────────────────────────────────
 
+@st.cache_data(ttl=60)
 def _get_snapshot() -> dict:
     base = {"usd_brl": 5.75, "cbot_soy_usd_mt": 0.0,
             "cbot_corn_usd_mt": 0.0, "ice_sugar_usd_mt": 0.0,
@@ -696,6 +724,44 @@ def _get_snapshot() -> dict:
 
 
 _MAX_PRECO_FISICO_DIAS = 30   # aceita dados históricos até 30 dias (fallback Supabase)
+
+
+@st.cache_data(ttl=300)
+def _get_precos_fisicos_batch(produto: str) -> dict:
+    """1 query → {UF_upper: {"preco_brl_ton":..., "fonte":..., "ts":...}}
+    Substitui as N chamadas individuais em _render_comparativo."""
+    try:
+        eng = get_engine()
+        with eng.connect() as conn:
+            rows = conn.execute(sqlalchemy.text(
+                "SELECT UPPER(uf), preco_brl_ton, fonte, timestamp "
+                "FROM tb_preco_fisico_raw "
+                "WHERE UPPER(produto)=UPPER(:p) "
+                "ORDER BY timestamp DESC"
+            ), {"p": produto}).fetchall()
+        result: dict = {}
+        now = datetime.now()
+        for uf_up, preco, fonte, ts in rows:
+            if uf_up in result:
+                continue          # já tem o mais recente para este UF
+            if not preco:
+                continue
+            # Verifica TTL
+            try:
+                from datetime import timezone
+                if hasattr(ts, "tzinfo") and ts.tzinfo:
+                    age = (datetime.now(timezone.utc) - ts).days
+                else:
+                    age = (now - ts).days if ts else 999
+                if age > _MAX_PRECO_FISICO_DIAS:
+                    continue
+            except Exception:
+                pass
+            result[uf_up] = {"preco_brl_ton": preco, "fonte": fonte, "ts": str(ts)[:16]}
+        return result
+    except Exception:
+        return {}
+
 
 def _get_preco_fisico(produto: str, uf: str) -> dict | None:
     try:
@@ -903,9 +969,11 @@ def _render_comparativo(snap: dict, produto_key: str, produto_meta: dict,
         k: v for k, v in _PORTOS.items()
         if not is_sugar or v.get("sugar_porto", False) or k == porto_atual
     }
+    # Uma única query batch em vez de N queries individuais
+    precos_batch = _get_precos_fisicos_batch(produto_key)
     rows_html = ""
     for label, meta in portos_filtrados.items():
-        pf = _get_preco_fisico(produto_key, meta["uf"])
+        pf = precos_batch.get((meta["uf"] or "").upper())
         r  = _calcular_stack(snap, meta, produto_meta, volume,
                              pf["preco_brl_ton"] if pf else None)
         destaque = label == porto_atual
@@ -958,7 +1026,21 @@ def _render_cif(snap: dict, resultado: dict, porto_code: str,
             unsafe_allow_html=True,
         )
 
-        destino = st.selectbox("Destino CIF", _DESTINOS_CIF, key="px_cif_dest")
+        # Seleção 2 níveis: região → destino (evita lista plana com 28 itens)
+        _col_reg, _col_dest = st.columns([1, 2])
+        with _col_reg:
+            _regiao_cif = st.radio(
+                "Região",
+                list(_DEST_GRUPOS.keys()),
+                key="px_cif_region",
+                horizontal=False,
+            )
+        with _col_dest:
+            destino = st.selectbox(
+                "Destino CIF",
+                _DEST_GRUPOS[_regiao_cif],
+                key=f"px_cif_dest_{_regiao_cif}",
+            )
 
         bunker           = snap.get("bunker_vlsfo", 550.0) or 550.0
         daily_hire_mkt   = snap.get("daily_hire", 0) or 0
@@ -1162,31 +1244,41 @@ def _render_calculadora():
         porto_meta = _PORTOS[porto_label]
         porto_code = porto_meta["code"]
         navio_auto = _navio_para_porto_volume(volume, porto_code)
+        # Key inclui o navio auto-selecionado: quando o volume cruzar o limiar de
+        # classe (ex: 32k→Supramax), o key muda e o selectbox reseta para o novo default.
         navio_key  = st.selectbox(
-            "Classe de navio", list(_NAVIOS.keys()),
+            "Classe de navio ✦",
+            list(_NAVIOS.keys()),
             index=list(_NAVIOS.keys()).index(navio_auto),
-            key=f"px_navio_{porto_label}",
+            key=f"px_navio_{porto_code}_{navio_auto.split()[0]}",
+            help=f"Auto-selecionado por volume ({volume:,.0f} MT) e calado do porto. Você pode sobrescrever.",
         )
 
-    # Nota sobre número de navios necessários
+    # Nota sobre número de navios necessários + validação DWT do porto
     dwt_sel    = _NAVIOS[navio_key]["dwt_cargo"]
+    dwt_max_p  = _PORTO_MAX_DWT.get(porto_code, 80_000)
     n_navios   = math.ceil(volume / dwt_sel)
     sh_sel     = navio_key.split("(")[0].strip()
     sh_auto    = navio_auto.split("(")[0].strip()
+    navio_ok   = _NAVIOS[navio_key]["dwt_max"] <= dwt_max_p
+    alerta_dwt = (
+        f' &nbsp;<span style="color:#FA3232;font-weight:700">⚠ {porto_label.split(" (")[0]} aceita até '
+        f'{dwt_max_p:,} DWT</span>'
+        if not navio_ok else ""
+    )
     if n_navios > 1:
         nota_navio = (
             f'<span style="color:#FA8200;font-weight:700">{n_navios}× {sh_sel}</span>'
-            f' necessários para {volume:,.0f} MT'
-        )
-        if navio_key != navio_auto:
-            nota_navio += f' &nbsp;·&nbsp; <span style="color:#64C8FA">recomendado: {sh_auto}</span>'
-    elif navio_key != navio_auto:
-        nota_navio = (
-            f'1× {sh_sel} cobre {volume:,.0f} MT'
-            f' &nbsp;·&nbsp; <span style="color:#BFBFBF">auto-selecionado: {sh_auto}</span>'
+            f' necessários para {volume:,.0f} MT{alerta_dwt}'
         )
     else:
-        nota_navio = f'1× {sh_sel} cobre {volume:,.0f} MT em 1 viagem'
+        cor_auto = "#64C8FA" if navio_key == navio_auto else "#9B59B6"
+        auto_txt = "✦ recomendado" if navio_key == navio_auto else f"⚡ recomendado: {sh_auto}"
+        nota_navio = (
+            f'1× {sh_sel} cobre {volume:,.0f} MT em 1 viagem'
+            f' &nbsp;<span style="color:{cor_auto}">{auto_txt}</span>'
+            f'{alerta_dwt}'
+        )
     st.markdown(
         f'<div style="font-size:11px;color:#555;font-family:Montserrat,sans-serif;'
         f'margin-bottom:8px">{nota_navio}</div>',

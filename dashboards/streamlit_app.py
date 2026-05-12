@@ -57,7 +57,11 @@ except Exception:
     pass
 
 from models.database import get_engine, get_session, create_tables
-from services.market_data import market_data, PhysicalMarketScraper
+try:
+    from services.market_data import market_data, PhysicalMarketScraper
+except Exception:
+    market_data = None
+    PhysicalMarketScraper = None
 
 # Garante que o banco existe (necessário no Streamlit Cloud onde o SQLite começa vazio)
 try:
@@ -1329,6 +1333,9 @@ def load_kpis():
 
 @st.cache_data(ttl=60)
 def load_pracas(produto: str):
+    if market_data is None:
+        import pandas as _pd
+        return _pd.DataFrame()
     df = market_data.get_pracas_fisicas(produto)
     return df
 
@@ -1530,6 +1537,8 @@ def load_book():
 @st.cache_data(ttl=300)
 def load_market():
     """Market overview cacheado (SOY, CORN, SUGAR, USD/BRL — para KPI cards)."""
+    if market_data is None:
+        return {}
     try:
         result = market_data.get_market_overview()
         # Se DB retornou zeros, busca ao vivo no yfinance
@@ -1565,6 +1574,8 @@ def load_extended_market() -> dict:
     Fallback progressivo: extended → base → vazio.
     """
     # Tenta o overview completo (requer restart do Streamlit para pegar módulo novo)
+    if market_data is None:
+        return {}
     try:
         if hasattr(market_data, "get_extended_overview"):
             return market_data.get_extended_overview()
@@ -1603,6 +1614,8 @@ def load_extended_market() -> dict:
         return ordered
 
     except Exception:
+        if market_data is None:
+            return {}
         return market_data.get_market_overview()
 
 
