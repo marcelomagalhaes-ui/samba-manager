@@ -57,6 +57,37 @@ PUBLIC_WEBHOOK_URL = os.getenv("TWILIO_WEBHOOK_PUBLIC_URL", "")
 # Drive webhook — token compartilhado definido em scripts/register_drive_webhook.py
 DRIVE_WEBHOOK_TOKEN = os.getenv("DRIVE_WEBHOOK_TOKEN", "")
 
+# ------------------------------------------------------------------
+# Grupos WhatsApp internos — nomes canônicos para roteamento
+# ------------------------------------------------------------------
+# Quando o Twilio recebe mensagem de um grupo, o campo "GroupName"
+# contém o nome exibido no WhatsApp.  Mapeamos esses nomes para a
+# função de cada grupo, permitindo roteamento diferenciado.
+_GRP_MAILBOX   = os.getenv("WPP_GROUP_MAILBOX_NAME",   "SAMBA AGENTS MAIL BOX")
+_GRP_DRIVE     = os.getenv("WPP_GROUP_DRIVE_NAME",     "SAMBA AGENTS GOOGLE DRIVE")
+_GRP_TASKS_FUP = os.getenv("WPP_GROUP_TASKS_FUP_NAME", "SAMBA AGENTS TASKS FUP")
+
+# Conjunto para lookup O(1)
+_INTERNAL_GROUPS: set[str] = {_GRP_MAILBOX, _GRP_DRIVE, _GRP_TASKS_FUP}
+
+def _group_channel(group_name: str) -> str:
+    """
+    Retorna o canal interno correspondente ao nome do grupo.
+    Usado pelo InternalNotifyService para despachar no grupo certo.
+
+      "SAMBA AGENTS MAIL BOX"      → "mailbox"
+      "SAMBA AGENTS GOOGLE DRIVE"  → "drive"
+      "SAMBA AGENTS TASKS FUP"     → "tasks"
+      qualquer outro               → "external"  (grupo de cliente)
+    """
+    if group_name == _GRP_MAILBOX:
+        return "mailbox"
+    if group_name == _GRP_DRIVE:
+        return "drive"
+    if group_name == _GRP_TASKS_FUP:
+        return "tasks"
+    return "external"
+
 
 # ----------------------------------------------------------------------------
 # App
@@ -147,6 +178,7 @@ def persist_inbound_message(form: dict[str, str]) -> Optional[int]:
     sid = form.get("MessageSid", "").strip()
     profile = form.get("ProfileName", "").strip()
     num_media = int(form.get("NumMedia", "0") or 0)
+    group_name = form.get("GroupName", "").strip() or None
 
     session = get_session()
     try:
@@ -167,7 +199,7 @@ def persist_inbound_message(form: dict[str, str]) -> Optional[int]:
             timestamp=datetime.utcnow(),
             sender=sender or (profile or "unknown"),
             content=body,
-            group_name=None,
+            group_name=group_name,
             is_media=num_media > 0,
             is_system=False,
             has_attachments=num_media > 0,
@@ -271,13 +303,24 @@ async def webhook_twilio(form: dict[str, str] = Depends(verify_twilio_signature)
         logger.error("webhook_twilio: persist_inbound_message devolveu None")
         raise HTTPException(status_code=500, detail="Falha ao persistir mensagem.")
 
+    sender     = form.get("From", "").replace("whatsapp:", "").strip()
+    body       = form.get("Body", "")
+    group_name = form.get("GroupName", "").strip()
+
+    # ── Identifica o canal interno (ou externo/cliente) ─────────────────
+    channel = _group_channel(group_name) if group_name else "direct"
+    is_internal = channel in ("mailbox", "drive", "tasks")
+    logger.info(
+        "webhook_twilio: msg_id=%s sender=%s group='%s' channel=%s",
+        msg_id, sender, group_name or "(direto)", channel,
+    )
+
     # ── Follow-Up response matching ───────────────────────────────────────
     # Antes de rotear para o Extractor, verificamos se o remetente está
     # aguardando resposta de algum FollowUp enviado. Se sim, marcamos no banco
     # e despachamos a task de notificação interna (queue_notify, rápida).
-    sender = form.get("From", "").replace("whatsapp:", "").strip()
-    body   = form.get("Body", "")
-    fu_ids = match_followup_response(sender, body)
+    # Mensagens de grupos internos NÃO disparam match de follow-up.
+    fu_ids = [] if is_internal else match_followup_response(sender, body)
     if fu_ids:
         from tasks.agent_tasks import task_process_followup_response
         for fu_id in fu_ids:
@@ -317,12 +360,15 @@ async def webhook_twilio(form: dict[str, str] = Depends(verify_twilio_signature)
             _mention_result = task_process_mention.delay(
                 message_id=msg_id,
                 sender=sender,
-                group=form.get("GroupName", form.get("To", "")),
+                group=group_name or form.get("To", ""),
                 question=_mention_question,
+                # canal interno passado como metadata para o router
+                # usar na resposta (reply ao grupo correto)
+                channel=channel,
             )
             logger.info(
-                "webhook_twilio: @mention detectado — task=%s question='%s'",
-                _mention_result.id, _mention_question[:60],
+                "webhook_twilio: @mention detectado — canal=%s task=%s question='%s'",
+                channel, _mention_result.id, _mention_question[:60],
             )
     except Exception as _mention_err:
         logger.warning("webhook_twilio: @mention dispatch error — %s", _mention_err)
@@ -333,8 +379,9 @@ async def webhook_twilio(form: dict[str, str] = Depends(verify_twilio_signature)
     #   2. Alerta interno com checklist NCNDA NO GRUPO INTERNO
     # NUNCA: checklists ou alertas operacionais no grupo do cliente.
     try:
-        _group_name = form.get("GroupName", "")
-        if _group_name:
+        _group_name = group_name  # já extraído acima
+        # Grupos internos Samba (MAIL BOX, DRIVE, TASKS FUP) nunca disparam welcome
+        if _group_name and not is_internal:
             from services.whatsapp_group_welcome import is_samba_client_group
             if is_samba_client_group(_group_name):
                 from tasks.agent_tasks import task_handle_new_samba_group

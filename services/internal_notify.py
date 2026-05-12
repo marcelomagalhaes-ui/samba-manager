@@ -39,8 +39,37 @@ ASSIGNEE_EMAILS: dict[str, str] = {
     "Marcelo":  os.getenv("EMAIL_MARCELO",  "marcelo.magalhaes@sambaexport.com.br"),
 }
 
-# Grupo WhatsApp interno (número E.164 ou SID Twilio do grupo).
-INTERNAL_WPP_GROUP: str = os.getenv("INTERNAL_WPP_GROUP", "")
+# ------------------------------------------------------------------
+# Grupos WhatsApp internos por função
+# ------------------------------------------------------------------
+# Cada grupo tem uma responsabilidade diferente no workflow:
+#   MAILBOX    → alertas de email / inbox / documentos recebidos
+#   DRIVE      → notificações de Google Drive (novos arquivos, mudanças)
+#   TASKS_FUP  → follow-ups, cobranças, escalações, pipeline
+#
+# ID: o campo "From" do webhook Twilio quando uma mensagem chega desse grupo.
+# Nome: como o grupo aparece no campo "GroupName" do webhook (para roteamento).
+
+WPP_GROUP_MAILBOX_ID:   str = os.getenv("WPP_GROUP_MAILBOX_ID",   "")
+WPP_GROUP_DRIVE_ID:     str = os.getenv("WPP_GROUP_DRIVE_ID",     "")
+WPP_GROUP_TASKS_FUP_ID: str = os.getenv("WPP_GROUP_TASKS_FUP_ID", "")
+
+WPP_GROUP_MAILBOX_NAME:   str = os.getenv("WPP_GROUP_MAILBOX_NAME",   "SAMBA AGENTS MAIL BOX")
+WPP_GROUP_DRIVE_NAME:     str = os.getenv("WPP_GROUP_DRIVE_NAME",     "SAMBA AGENTS GOOGLE DRIVE")
+WPP_GROUP_TASKS_FUP_NAME: str = os.getenv("WPP_GROUP_TASKS_FUP_NAME", "SAMBA AGENTS TASKS FUP")
+
+# Mapa nome → ID para lookup rápido no webhook
+GROUP_NAME_TO_ID: dict[str, str] = {
+    WPP_GROUP_MAILBOX_NAME:   WPP_GROUP_MAILBOX_ID,
+    WPP_GROUP_DRIVE_NAME:     WPP_GROUP_DRIVE_ID,
+    WPP_GROUP_TASKS_FUP_NAME: WPP_GROUP_TASKS_FUP_ID,
+}
+
+# Legado — fallback para quem ainda lê INTERNAL_WPP_GROUP diretamente
+INTERNAL_WPP_GROUP: str = (
+    os.getenv("INTERNAL_WPP_GROUP", "")
+    or WPP_GROUP_TASKS_FUP_ID   # novo alias
+)
 
 
 # ------------------------------------------------------------------
@@ -61,33 +90,64 @@ class InternalNotifyService:
     # Envio WhatsApp interno
     # ----------------------------------------------------------
 
-    def _send_wpp(self, text: str) -> bool:
-        """Envia mensagem ao grupo interno via agente Manager."""
-        if not INTERNAL_WPP_GROUP:
+    def _send_wpp(self, text: str, group_id: str = "") -> bool:
+        """
+        Envia mensagem ao grupo interno via agente Manager.
+
+        Args:
+            text:     Texto da mensagem.
+            group_id: ID do grupo WhatsApp (E.164/@g.us).
+                      Se omitido, usa INTERNAL_WPP_GROUP (legado/TASKS_FUP).
+        """
+        target = group_id or INTERNAL_WPP_GROUP
+        if not target:
             logger.warning(
-                "InternalNotify: INTERNAL_WPP_GROUP não configurado — WhatsApp ignorado."
+                "InternalNotify: grupo WhatsApp não configurado — WhatsApp ignorado. "
+                "Preencha WPP_GROUP_TASKS_FUP_ID (ou WPP_GROUP_MAILBOX_ID / WPP_GROUP_DRIVE_ID) no .env."
             )
             return False
         try:
-            self.wpp.send(AgentRole.MANAGER, INTERNAL_WPP_GROUP, text)
+            self.wpp.send(AgentRole.MANAGER, target, text)
             return True
         except Exception as exc:
             logger.error("InternalNotify: falha WhatsApp — %s", exc)
             return False
 
-    def send_internal_wpp(self, text: str) -> bool:
+    def _send_wpp_mailbox(self, text: str) -> bool:
+        """Despacha para SAMBA AGENTS MAIL BOX (email/inbox/documentos)."""
+        return self._send_wpp(text, group_id=WPP_GROUP_MAILBOX_ID)
+
+    def _send_wpp_drive(self, text: str) -> bool:
+        """Despacha para SAMBA AGENTS GOOGLE DRIVE (Drive/RAG notifications)."""
+        return self._send_wpp(text, group_id=WPP_GROUP_DRIVE_ID)
+
+    def _send_wpp_tasks(self, text: str) -> bool:
+        """Despacha para SAMBA AGENTS TASKS FUP (follow-ups, pipeline, escalações)."""
+        return self._send_wpp(text, group_id=WPP_GROUP_TASKS_FUP_ID)
+
+    def send_internal_wpp(self, text: str, channel: str = "tasks") -> bool:
         """
         Envia mensagem livre ao grupo WhatsApp interno corporativo.
 
-        Método público para uso pelas Sprint M tasks (Morning Pulse, Drive Status,
-        Geopolitical Sentinel, Voice ATA). Delega para `_send_wpp` internamente.
+        Args:
+            text:    Conteúdo da mensagem.
+            channel: "tasks" (default) | "mailbox" | "drive"
+                     Seleciona o grupo de destino.
 
         Returns:
-            True  se enviado com sucesso (ou simulado em WHATSAPP_OFFLINE).
-            False se INTERNAL_WPP_GROUP não configurado ou erro de envio.
+            True  se enviado com sucesso.
+            False se grupo não configurado ou erro de envio.
         """
-        logger.info("send_internal_wpp: enviando %d chars ao grupo interno", len(text))
-        return self._send_wpp(text)
+        logger.info(
+            "send_internal_wpp: canal=%s %d chars", channel, len(text)
+        )
+        dispatch = {
+            "mailbox": self._send_wpp_mailbox,
+            "drive":   self._send_wpp_drive,
+            "tasks":   self._send_wpp_tasks,
+        }
+        fn = dispatch.get(channel, self._send_wpp_tasks)
+        return fn(text)
 
     # ----------------------------------------------------------
     # Alerta: deal com campos faltantes
@@ -189,7 +249,8 @@ class InternalNotifyService:
             + "\n".join(f"  • {_label_map.get(m, m)}" for m in missing)
             + f"\n\n👉 Acesse o painel e atualize o deal após obter as informações."
         )
-        wpp_ok = self._send_wpp(wpp_text)
+        # Deal incompleto → TASKS FUP (é uma tarefa de follow-up/qualificação)
+        wpp_ok = self._send_wpp_tasks(wpp_text)
 
         return {"email": email_ok, "whatsapp": wpp_ok}
 
@@ -439,7 +500,8 @@ class InternalNotifyService:
             f"*Mensagem:*\n{response_content[:300] or '—'}"
             f"\n\n👉 Acesse o painel para avançar o deal."
         )
-        wpp_ok = self._send_wpp(wpp_text)
+        # Resposta recebida → TASKS FUP (avanço do pipeline)
+        wpp_ok = self._send_wpp_tasks(wpp_text)
 
         return {"email": email_ok, "whatsapp": wpp_ok}
 
@@ -617,7 +679,8 @@ class InternalNotifyService:
             )
             + "\n\n👉 Acesse o painel e dê seguimento."
         )
-        self._send_wpp(wpp_text)
+        # Deals parados → TASKS FUP
+        self._send_wpp_tasks(wpp_text)
 
         return email_ok
 
