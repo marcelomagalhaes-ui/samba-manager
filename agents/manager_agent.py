@@ -144,6 +144,11 @@ class ManagerAgent(BaseAgent):
             results["matches"] = matches
             self.log_action("matches_found", {"count": len(matches)})
 
+            # Persiste matches detectados nas notas dos deals (não perde entre runs)
+            if matches and not dry_run:
+                persisted = self._persist_matches(matches)
+                self.log_action("matches_persisted", {"count": persisted})
+
             # 4. Gerar briefing diário
             briefing = self._generate_briefing(deals, matches)
             results["briefing_preview"] = briefing[:300] + "..." if len(briefing) > 300 else briefing
@@ -331,6 +336,58 @@ class ManagerAgent(BaseAgent):
             "commodities": list({m["commodity"] for m in matches}),
         })
         return matches
+
+    # ──────────────────────────────────────────────────────────
+    # (c.2) Persistir matches detectados no banco
+    # ──────────────────────────────────────────────────────────
+
+    def _persist_matches(self, matches: list[dict]) -> int:
+        """
+        Anota as oportunidades de arbitragem detectadas nas notas dos deals
+        participantes (vendedor e comprador), evitando append duplicado.
+
+        Retorna o número de deals atualizados.
+        """
+        today_str = datetime.now().strftime("%d/%m/%Y")
+        updated = 0
+
+        for m in matches:
+            tag = f"[MATCH {today_str}]"
+            match_line = (
+                f"{tag} {m['commodity'].upper()} spread "
+                f"{m['currency']} {m['spread']:,.2f}/MT | "
+                f"Venda {m['preco_venda']:,.2f} × Compra {m['preco_compra']:,.2f}"
+            )
+
+            for deal_id, side in [
+                (m["vendedor_id"], "VENDEDOR"),
+                (m["comprador_id"], "COMPRADOR"),
+            ]:
+                if not deal_id:
+                    continue
+                deal = self.session.query(Deal).filter(Deal.id == deal_id).first()
+                if not deal:
+                    continue
+
+                # Evita duplicata no mesmo dia
+                existing_notes = deal.notes or ""
+                if tag in existing_notes:
+                    continue
+
+                counterpart = (
+                    m["comprador_nome"] if side == "VENDEDOR"
+                    else m["vendedor_nome"]
+                )
+                full_line = f"{match_line} | Contraparte: {counterpart} ({side})"
+                deal.notes = (existing_notes + "\n" + full_line).strip()
+                deal.updated_at = datetime.utcnow()
+                updated += 1
+                logger.info("Match persistido: Deal #%d — %s", deal_id, full_line[:80])
+
+        if updated:
+            self.session.commit()
+
+        return updated
 
     # ──────────────────────────────────────────────────────────
     # (d) Gerar briefing diário

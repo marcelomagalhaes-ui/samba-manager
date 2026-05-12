@@ -454,12 +454,70 @@ class IntelligenceRouter:
 
     # ── L3/L4: Gemini com contexto ────────────────────────────────────────────
 
+    # ── Memória de conversa (ConversationHistory) ─────────────────────────────
+
+    def _load_history(self, sender: str, n: int = 4) -> str:
+        """
+        Carrega os últimos `n` turnos de conversa de `sender` da tabela
+        conversation_history e retorna como bloco de texto formatado.
+
+        Retorna string vazia se não há histórico ou em caso de erro.
+        """
+        if not sender:
+            return ""
+        try:
+            from models.database import get_session, ConversationHistory
+            sess = get_session()
+            rows = (
+                sess.query(ConversationHistory)
+                .filter(ConversationHistory.session_id == sender)
+                .order_by(ConversationHistory.timestamp.desc())
+                .limit(n)
+                .all()
+            )
+            sess.close()
+            if not rows:
+                return ""
+            # Reverte para ordem cronológica
+            rows = list(reversed(rows))
+            lines = []
+            for r in rows:
+                role_label = "Pergunta" if r.role == "user" else "Resposta"
+                ts = r.timestamp.strftime("%d/%m %H:%M") if r.timestamp else ""
+                lines.append(f"[{ts}] {role_label}: {(r.content or '')[:300]}")
+            return "\n".join(lines)
+        except Exception as exc:
+            logger.debug("_load_history(%s) error: %s", sender, exc)
+            return ""
+
+    def _save_history(self, sender: str, question: str, answer: str) -> None:
+        """
+        Persiste o par (pergunta do usuário, resposta do assistente) em
+        conversation_history para manter memória entre sessões.
+        """
+        if not sender:
+            return
+        try:
+            from models.database import get_session, ConversationHistory
+            sess = get_session()
+            sess.add(ConversationHistory(
+                session_id=sender, role="user", content=question[:2000],
+            ))
+            sess.add(ConversationHistory(
+                session_id=sender, role="assistant", content=answer[:2000],
+            ))
+            sess.commit()
+            sess.close()
+        except Exception as exc:
+            logger.debug("_save_history(%s) error: %s", sender, exc)
+
     def call_gemini(
         self,
-        question:  str,
-        context:   str,
-        model:     str = MODEL_FLASH,
-        max_tokens: int = 600,
+        question:    str,
+        context:     str,
+        model:       str = MODEL_FLASH,
+        max_tokens:  int = 600,
+        history_ctx: str = "",
     ) -> tuple[str, float]:
         """
         Chama Gemini APENAS com o contexto recuperado.
@@ -473,8 +531,12 @@ class IntelligenceRouter:
         if not GEMINI_API_KEY:
             return "Serviço de IA não configurado (GEMINI_API_KEY ausente).", 0.0
 
-        prompt = f"""{_SYSTEM_FACTS_ONLY}
+        history_block = ""
+        if history_ctx:
+            history_block = f"\n═══ HISTÓRICO RECENTE DESTA CONVERSA ═══\n{history_ctx}\n══════════════════════════════════════\n"
 
+        prompt = f"""{_SYSTEM_FACTS_ONLY}
+{history_block}
 ═══ CONTEXTO RECUPERADO DO SISTEMA ═══
 {context if context else "[Nenhum dado encontrado no banco ou documentos para essa pergunta]"}
 ══════════════════════════════════════
@@ -574,6 +636,11 @@ RESPOSTA (baseada exclusivamente no contexto acima):"""
         start = datetime.utcnow()
         logger.info("route: question='%s' sender=%s msg_id=%s", question[:80], sender, message_id)
 
+        # ── Memória — carrega histórico recente do remetente ──────────────────
+        history_ctx = self._load_history(sender, n=4)
+        if history_ctx:
+            logger.info("route: history loaded (%d chars) for %s", len(history_ctx), sender)
+
         # ── L0 — Intenção ────────────────────────────────────────────────────
         intent = self.classify_intent(question)
         logger.info("route: intent=%s", intent)
@@ -600,11 +667,12 @@ RESPOSTA (baseada exclusivamente no contexto acima):"""
         # ── L3 — Gemini Flash ─────────────────────────────────────────────────
         answer_flash, conf_flash = self.call_gemini(
             question, combined_ctx, model=MODEL_FLASH, max_tokens=500,
+            history_ctx=history_ctx,
         )
         logger.info("route: L3 conf=%.2f", conf_flash)
 
         if conf_flash >= CONF_RESPOND:
-            return RouterResult(
+            result = RouterResult(
                 answer=answer_flash,
                 source="gemini_flash",
                 level=3,
@@ -612,17 +680,20 @@ RESPOSTA (baseada exclusivamente no contexto acima):"""
                 intent=intent,
                 context_used=bool(combined_ctx),
             )
+            self._save_history(sender, question, answer_flash)
+            return result
 
         # ── L4 — Gemini Pro (escala) ──────────────────────────────────────────
         if conf_flash >= CONF_ESCALATE:
             # Contexto parcial — tenta com Pro
             answer_pro, conf_pro = self.call_gemini(
                 question, combined_ctx, model=MODEL_PRO, max_tokens=800,
+                history_ctx=history_ctx,
             )
             logger.info("route: L4 conf=%.2f", conf_pro)
 
             if conf_pro >= CONF_ESCALATE:
-                return RouterResult(
+                result = RouterResult(
                     answer=answer_pro,
                     source="gemini_pro",
                     level=4,
@@ -630,6 +701,8 @@ RESPOSTA (baseada exclusivamente no contexto acima):"""
                     intent=intent,
                     context_used=bool(combined_ctx),
                 )
+                self._save_history(sender, question, answer_pro)
+                return result
 
         # ── L5a — Raw DB/RAG fallback (LLM indisponível mas dados encontrados) ──
         # Quando Gemini está indisponível (rate limit/erro) mas temos dados reais no
@@ -641,7 +714,7 @@ RESPOSTA (baseada exclusivamente no contexto acima):"""
                 + combined_ctx[:2000]
                 + "\n\n_Use o painel para visualização completa._"
             )
-            return RouterResult(
+            result = RouterResult(
                 answer=raw_answer,
                 source="db" if db_found else "rag",
                 level=5,
@@ -649,11 +722,15 @@ RESPOSTA (baseada exclusivamente no contexto acima):"""
                 intent=intent,
                 context_used=True,
             )
+            self._save_history(sender, question, raw_answer)
+            return result
 
         # ── L5b — Honest fallback (nenhum dado encontrado) ────────────────────
         logger.info("route: L5b honest_fallback — nenhum nível produziu resposta confiável")
+        fallback_answer = self.honest_fallback(question)
+        self._save_history(sender, question, fallback_answer)
         return RouterResult(
-            answer=self.honest_fallback(question),
+            answer=fallback_answer,
             source="fallback",
             level=5,
             confidence="baixa",

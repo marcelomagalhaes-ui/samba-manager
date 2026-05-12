@@ -449,6 +449,87 @@ KNOWLEDGE_BASE: dict[str, dict[str, Any]] = {
     },
 }
 
+# ─── KB dinâmica — lê deals do banco de dados ────────────────────────────────
+
+def _load_kb_from_db() -> dict[str, dict[str, Any]]:
+    """
+    Carrega deals ativos do banco de dados e converte para o formato KNOWLEDGE_BASE.
+
+    Retorna um dict {job_code: {field: value}} para deals que:
+      - têm nome (usado como job_code)
+      - estão com status != 'inativo'
+      - não estão já cobertos pelo KNOWLEDGE_BASE estático (que tem precedência)
+
+    Campos mapeados:
+      direcao  → oferta  ("OFERTA" | "PEDIDO")
+      stage    → status
+      commodity→ produto
+      destination → comprador (se direcao=venda) ou fornecedor (se compra)
+      notes    → situacao
+    """
+    try:
+        import sys as _sys
+        import os as _os
+        _sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), ".."))
+        from models.database import get_session, Deal
+        from sqlalchemy import text
+
+        sess = get_session()
+        deals = (
+            sess.query(Deal)
+            .filter(
+                Deal.name.isnot(None),
+                Deal.status != "inativo",
+            )
+            .order_by(Deal.updated_at.desc())
+            .limit(200)
+            .all()
+        )
+        sess.close()
+    except Exception as exc:
+        logger.warning("_load_kb_from_db: erro ao carregar DB — %s", exc)
+        return {}
+
+    db_kb: dict[str, dict[str, Any]] = {}
+    for deal in deals:
+        job_code = (deal.name or "").strip()
+        if not job_code or job_code in KNOWLEDGE_BASE:
+            continue   # hardcoded tem precedência
+
+        direction = (deal.direcao or "").upper()
+        oferta = "OFERTA" if direction in ("VENDA", "ASK") else "PEDIDO"
+
+        # Volume + preço em 1 linha para a viz
+        vol_str = f"{deal.volume:,.0f} {deal.volume_unit}" if deal.volume and deal.volume_unit else ""
+        price_str = f"{deal.price:,.2f} {deal.currency}/MT" if deal.price and deal.currency else ""
+        inco_str  = deal.incoterm or ""
+        viz_parts = filter(None, [deal.commodity, vol_str, inco_str, price_str, deal.destination or deal.origin])
+        viz = " | ".join(viz_parts)[:120]
+
+        # Comprador/fornecedor heurística por direção
+        if direction in ("VENDA", "ASK"):
+            comprador  = deal.destination or ""
+            fornecedor = deal.source_sender or deal.assignee or ""
+        else:
+            comprador  = deal.source_sender or deal.source_group or ""
+            fornecedor = deal.origin or ""
+
+        db_kb[job_code] = {
+            "oferta":        oferta,
+            "status":        deal.stage or "",
+            "produto":       deal.commodity or "",
+            "comprador":     comprador,
+            "fornecedor":    fornecedor,
+            "viz":           viz,
+            "especificacao": (deal.notes or "")[:300],
+            "situacao":      deal.stage or "",
+            "acao":          "",   # não temos ação automática — deixa vazio para não sobrescrever
+        }
+
+    logger.info("_load_kb_from_db: %d deals carregados do banco", len(db_kb))
+    return db_kb
+
+
 # ─── Mapeamento de campo → índice de coluna ──────────────────────────────────
 FIELD_TO_COL: dict[str, int] = {
     "oferta":        COL_OFERTA,
@@ -511,6 +592,26 @@ class WppEnrichmentAgent:
         creds = drive_manager.creds
         self._service = build("sheets", "v4", credentials=creds)
         self._sheets = self._service.spreadsheets()
+        self._effective_kb: dict[str, dict[str, Any]] | None = None  # lazy cache
+
+    def _get_effective_kb(self) -> dict[str, dict[str, Any]]:
+        """
+        Retorna o Knowledge Base efetivo: hardcoded KNOWLEDGE_BASE + deals do banco.
+
+        KNOWLEDGE_BASE estático tem precedência — nunca é sobrescrito por dados do DB.
+        O resultado é cacheado por instância (1 sessão = 1 carga de DB).
+        """
+        if self._effective_kb is None:
+            db_kb = _load_kb_from_db()
+            # Merge: hardcoded first (higher priority), then db extras
+            self._effective_kb = {**db_kb, **KNOWLEDGE_BASE}
+            logger.info(
+                "_get_effective_kb: %d hardcoded + %d DB-only = %d total JOBs",
+                len(KNOWLEDGE_BASE),
+                len([k for k in db_kb if k not in KNOWLEDGE_BASE]),
+                len(self._effective_kb),
+            )
+        return self._effective_kb
 
     # ── Leitura da planilha ───────────────────────────────────────────────────
 
@@ -594,7 +695,7 @@ class WppEnrichmentAgent:
         job_writes: list[dict] = []
 
         # ── Processa JOBs com match direto ──
-        for job_code, kb_data in KNOWLEDGE_BASE.items():
+        for job_code, kb_data in self._get_effective_kb().items():
             # Verifica duplicata
             if job_code in DUPLICATE_JOB_MAP:
                 canonical = DUPLICATE_JOB_MAP[job_code]

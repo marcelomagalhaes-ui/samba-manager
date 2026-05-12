@@ -32,7 +32,7 @@ if str(ROOT) not in sys.path:
 import os
 
 from agents.base_agent import BaseAgent
-from models.database import get_session, Deal, FollowUp
+from models.database import get_session, Deal, FollowUp, PendingApproval
 from services.gemini_api import ask_gemini as ask_claude, MODEL_FAST
 from services.whatsapp_api import get_whatsapp_manager, AgentRole
 
@@ -182,16 +182,33 @@ class FollowUpAgent(BaseAgent):
     # (b) Processar um follow-up individual
     # ──────────────────────────────────────────────────────────
 
+    def _calc_attempt(self, fu: FollowUp) -> int:
+        """
+        Deriva o número de tentativa (1, 2 ou 3) com base em dias vencidos.
+
+        Tentativa 1 — 0-2 dias:  primeira abordagem suave
+        Tentativa 2 — 3-6 dias:  segunda abordagem firme
+        Tentativa 3 — 7+ dias:   terceira abordagem crítica (aciona HITL)
+        """
+        days = max(0, (datetime.utcnow() - fu.due_at).days)
+        if days <= 2:
+            return 1
+        if days <= 6:
+            return 2
+        return 3
+
     def _process_single_followup(self, fu: FollowUp, dry_run: bool = False) -> str:
         """
         Para um FollowUp específico:
           1. Recupera o Deal associado para contexto
-          2. Gera mensagem personalizada via Gemini
-          3. Despacha pelo canal disponível:
-               - dry_run=True      → só loga, não altera banco  → "simulated"
-               - WHATSAPP_OFFLINE  → email ao assignee com o texto pronto → "sent"
-               - WhatsApp ativo    → wpp.send() ao parceiro externo       → "sent"
-          4. Atualiza banco (só quando não dry_run)
+          2. Calcula a tentativa (1, 2 ou 3) pelo prazo vencido
+          3. Gera mensagem personalizada via Gemini com tom escalado
+          4. Despacha pelo canal disponível:
+               - dry_run=True      → só loga, não altera banco   → "simulated"
+               - WHATSAPP_OFFLINE  → email ao assignee            → "sent"
+               - Tentativa 3 WA   → cria PendingApproval primeiro → "sent"
+               - WhatsApp ativo    → wpp.send() ao parceiro       → "sent"
+          5. Atualiza banco (só quando não dry_run)
 
         Retorna: "sent" | "simulated" | "skipped"
         """
@@ -199,8 +216,9 @@ class FollowUpAgent(BaseAgent):
         if fu.deal_id:
             deal = self.session.query(Deal).filter(Deal.id == fu.deal_id).first()
 
+        attempt = self._calc_attempt(fu)
         context = self._build_context(fu, deal)
-        message = self._generate_followup_message(fu, context)
+        message = self._generate_followup_message(fu, context, attempt=attempt)
 
         days_overdue = (datetime.utcnow() - fu.due_at).days
         self.log_action("followup_processing", {
@@ -208,6 +226,7 @@ class FollowUpAgent(BaseAgent):
             "target": fu.target_person,
             "group": fu.target_group,
             "days_overdue": days_overdue,
+            "attempt": attempt,
             "channel": "email" if WHATSAPP_OFFLINE else "whatsapp",
         })
 
@@ -278,6 +297,44 @@ class FollowUpAgent(BaseAgent):
             fu.status = "expirado"
             return "skipped"
 
+        # ── HITL para tentativa 3 (crítica) ───────────────────────
+        # Antes de enviar a 3ª cobrança, cria um PendingApproval para
+        # que um sócio aprove/rejeite a mensagem via painel ou WhatsApp.
+        if attempt >= 3:
+            import json as _json
+            approval = PendingApproval(
+                action_type="send_wpp",
+                description=(
+                    f"[TENTATIVA {attempt}] Follow-up crítico para {recipient} "
+                    f"| Deal: {deal.name if deal else 'N/A'} | {days_overdue} dias sem resposta"
+                ),
+                payload_json=_json.dumps({
+                    "followup_id": fu.id,
+                    "recipient": recipient,
+                    "message": message,
+                    "attempt": attempt,
+                    "deal_id": fu.deal_id,
+                }, ensure_ascii=False),
+                requested_by="FollowUpAgent",
+                status="pending",
+            )
+            self.session.add(approval)
+            self.session.flush()
+            self.log_action("hitl_created", {
+                "approval_id": approval.id,
+                "followup_id": fu.id,
+                "recipient": recipient,
+                "attempt": attempt,
+            })
+            logger.info(
+                "FollowUp #%d (tentativa %d): PendingApproval #%d criado — aguardando aprovação.",
+                fu.id, attempt, approval.id,
+            )
+            # Não envia ainda — aguarda aprovação humana
+            fu.status = "aguardando_aprovacao"
+            fu.message = message
+            return "skipped"
+
         try:
             result = self.wpp.send(AgentRole.FOLLOWUP, recipient, message)
             fu.sent_at = datetime.utcnow()
@@ -319,42 +376,51 @@ class FollowUpAgent(BaseAgent):
     # (c) Gerar mensagem de cobrança via Claude
     # ──────────────────────────────────────────────────────────
 
-    def _generate_followup_message(self, fu: FollowUp, context: dict) -> str:
+    def _generate_followup_message(self, fu: FollowUp, context: dict, attempt: int = 1) -> str:
         """
         Gera mensagem de cobrança personalizada via Claude.
 
-        Adapta o tom conforme urgência:
-          - 1-2 dias vencido: suave, "só checando"
-          - 3-5 dias: mais direto, referencia o negócio
-          - 6+ dias: urgente, sinaliza que a janela pode fechar
+        Cadência em 3 tentativas com tom progressivamente mais firme:
+          Tentativa 1 (0-2 dias):  suave — "só checando", sem pressão
+          Tentativa 2 (3-6 dias):  firme — referencia o negócio, pergunta posição
+          Tentativa 3 (7+ dias):   crítica — janela de preço, pedido de confirmação urgente
         """
         days = context.get("days_since_contact", 0)
 
-        if days <= 2:
-            urgency = "suave"
-            urgency_guide = "Tom casual, apenas relembrando. Sem mencionar prazo."
-        elif days <= 5:
-            urgency = "médio"
-            urgency_guide = "Tom direto. Mencione o negócio específico. Pergunte se ainda há interesse."
-        else:
-            urgency = "urgente"
+        if attempt == 1:
+            urgency = "suave (1ª tentativa)"
             urgency_guide = (
-                "Tom mais firme. Sinalize que a janela de preço pode fechar. "
-                "Peça confirmação ou sinalização até hoje."
+                "Tom casual e amigável — apenas relembrando. "
+                "Não mencione prazo nem urgência. "
+                "Use uma frase de abertura original, nunca 'Espero que esteja bem'."
+            )
+        elif attempt == 2:
+            urgency = "firme (2ª tentativa)"
+            urgency_guide = (
+                "Tom direto e profissional. Mencione o negócio específico (commodity, volume). "
+                "Pergunte objetivamente se ainda há interesse ou se a posição mudou. "
+                "Sinalize que aguarda posição para avançar."
+            )
+        else:
+            urgency = "crítico (3ª e última tentativa)"
+            urgency_guide = (
+                "Tom urgente mas respeitoso. Sinalize claramente que a janela de preço "
+                "está se fechando e que precisará arquivar o negócio se não houver retorno hoje. "
+                "Deixe a porta aberta para contato futuro, mas seja direto sobre o prazo."
             )
 
         prompt = f"""Crie uma mensagem de follow-up para WhatsApp de trading de commodities.
 
-Urgência: {urgency} ({days} dias sem resposta)
+Tentativa: {attempt}/3 — Urgência: {urgency} ({days} dias sem resposta)
 Diretriz de tom: {urgency_guide}
 
 Contexto do negócio:
 {json.dumps(context, ensure_ascii=False, indent=2)}
 
-Mensagem anterior (se houver):
+Mensagem anterior enviada (NÃO repita o mesmo texto):
 {fu.message or 'Não há mensagem anterior registrada.'}
 
-Crie a mensagem de cobrança agora. Retorne APENAS o texto da mensagem."""
+Crie a mensagem de cobrança agora. Retorne APENAS o texto da mensagem (máximo 4 frases, 1 emoji)."""
 
         return ask_claude(
             prompt,
