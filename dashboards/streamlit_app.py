@@ -12,6 +12,26 @@ import streamlit as st
 import pandas as pd
 import sqlalchemy
 
+# ── Patch preemptivo: converte tokenize.TokenError → OSError ──────────────────
+# O Streamlit 1.x captura (OSError, TypeError) em _make_function_key mas NÃO
+# captura tokenize.TokenError.  Em alguns ambientes Cloud, inspect.getsource()
+# levanta TokenError ("EOF in multi-line statement") e o app crasha.
+# Este patch faz com que qualquer TokenError seja re-levantado como OSError,
+# ativando o fallback interno do Streamlit (hash por bytecode em vez de source).
+import inspect as _inspect_mod
+import tokenize as _tokenize_mod
+
+_orig_getsource = _inspect_mod.getsource
+
+def _safe_getsource(obj):
+    try:
+        return _orig_getsource(obj)
+    except _tokenize_mod.TokenError as _te:
+        raise OSError(f"tokenize.TokenError wrapped for st.cache_data: {_te}") from _te
+
+_inspect_mod.getsource = _safe_getsource
+# ─────────────────────────────────────────────────────────────────────────────
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
