@@ -35,8 +35,7 @@ from services.imfpa_template_engine import (
 )
 
 # ─── Pastas no Drive ──────────────────────────────────────────────────────────
-# Mesmas pastas usadas pelo LOI Generator
-TEMPLATES_FOLDER_ID = "1M9GsOrKTBvQxQRde1D1HraS4kVevlg3v"
+TEMPLATES_FOLDER_ID = "1tglDYSL180AV1A2ugKgi1MJ8Jw4e0ewN"   # MODELOS DE DOCUMENTOS/IMFPA
 OUTPUT_FOLDER_ID    = "1CPlF_9TtEZ32B5eTAb4b4jRC-h7L10Z2"
 
 # Nomes completos dos templates IMFPA no Drive
