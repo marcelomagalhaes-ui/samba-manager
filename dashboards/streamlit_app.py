@@ -558,6 +558,12 @@ if st.session_state.current_view == "ncnda":
     render_ncnda_widget()
     st.stop()
 
+# ─── IMFPA — Irrevocable Master Fee Protection Agreement ──────────
+if st.session_state.current_view == "imfpa":
+    from dashboards.imfpa_widget import render_imfpa_widget
+    render_imfpa_widget()
+    st.stop()
+
 # ─── Control Desk: sidebar nav ───────────────────────────────────
 with st.sidebar:
     st.markdown("""

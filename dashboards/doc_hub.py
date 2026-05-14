@@ -34,9 +34,9 @@ DOC_CATALOG = [
     {
         "code": "IMFPA",
         "name": "IMFPA",
-        "desc": "Irrevocable Master Fee Protection Agreement",
-        "active": False,
-        "wizard_key": "",
+        "desc": "Irrevocable Master Fee Protection Agreement — 1, 2 ou 3 intermediários",
+        "active": True,
+        "wizard_key": "imfpa",
     },
     {
         "code": "MOU",
@@ -119,6 +119,11 @@ _ICONS: dict[str, str] = {
         '<rect x="3" y="11" width="18" height="11" rx="2"/>'
         '<path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
     ),
+    "IMFPA": (
+        '<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" '
+        'stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">'
+        '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
+    ),
     "MOU": (
         '<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" '
         'stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">'
@@ -171,7 +176,7 @@ def render_doc_hub() -> None:
 
     # Memoriza a view de origem ANTES de entrar no hub — não pode ser "documentos",
     # "loi" ou "ncnda" porque essas são views internas do próprio fluxo.
-    _internal = {"documentos", "loi", "ncnda"}
+    _internal = {"documentos", "loi", "ncnda", "imfpa"}
     incoming = st.session_state.get("prev_view", "portal")
     if incoming not in _internal:
         st.session_state["_doc_hub_origin"] = incoming
