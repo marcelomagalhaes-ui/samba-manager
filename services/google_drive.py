@@ -316,6 +316,49 @@ class DriveManager:
                 logger.error(f"find_file_by_name falhou ({cand}): {exc}")
         return None
 
+    def find_file_by_prefix(
+        self,
+        prefix: str,
+        folder_id: str,
+        ignore_underscore_prefix: bool = True,
+    ) -> Optional[Dict]:
+        """
+        Procura arquivo cujo nome COMEÇA com *prefix* dentro de uma pasta.
+        Usa o operador `name contains` da Drive API como fallback tolerante.
+
+        Returns:
+            dict {id, name, mimeType} do primeiro match, ou None.
+        """
+        if not self.service:
+            return None
+        try:
+            safe = prefix.replace("'", "\\'")
+            q = (
+                f"'{folder_id}' in parents "
+                f"and name contains '{safe}' "
+                f"and trashed = false"
+            )
+            results = self.service.files().list(
+                q=q,
+                fields="files(id, name, mimeType)",
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True,
+                corpora="allDrives",
+                pageSize=20,
+            ).execute()
+            files = results.get("files", [])
+            if ignore_underscore_prefix:
+                files = [f for f in files if not f["name"].startswith("_")]
+            if files:
+                logger.info(
+                    f"find_file_by_prefix '{prefix}' → {files[0]['name']} "
+                    f"({files[0]['mimeType']})"
+                )
+                return files[0]
+        except Exception as exc:
+            logger.error(f"find_file_by_prefix falhou ({prefix}): {exc}")
+        return None
+
     def fetch_as_docx_bytes(self, file_meta: Dict) -> Optional[bytes]:
         """
         Retorna o conteúdo de um arquivo do Drive como bytes .docx.

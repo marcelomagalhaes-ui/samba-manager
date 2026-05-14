@@ -46,6 +46,8 @@ _TEMPLATE_NAMES = {
     2: "2IMFPA - SAMBA INTERM DE NEGOCIOS (EN).docx",
     3: "3IMFPA - SAMBA INTERM DE NEGOCIOS (EN).docx",
 }
+# Prefixos para busca tolerante (find_file_by_prefix)
+_TEMPLATE_PREFIX = {1: "1IMFPA", 2: "2IMFPA", 3: "3IMFPA"}
 
 
 class IMFPAGeneratorAgent(BaseAgent):
@@ -100,17 +102,27 @@ class IMFPAGeneratorAgent(BaseAgent):
         template_filename = _TEMPLATE_NAMES[n_parties]
         self.log_action("locate_template", {"filename": template_filename, "n_parties": n_parties})
 
+        # Tenta match exato primeiro; fallback: busca pelo prefixo "1IMFPA" / "2IMFPA" etc.
         meta = self.drive.find_file_by_name(
             template_filename,
             TEMPLATES_FOLDER_ID,
             ignore_underscore_prefix=True,
         )
         if not meta:
+            prefix = _TEMPLATE_PREFIX[n_parties]   # ex: "1IMFPA"
+            self.log_action("locate_template_fallback", {"prefix": prefix})
+            meta = self.drive.find_file_by_prefix(
+                prefix,
+                TEMPLATES_FOLDER_ID,
+                ignore_underscore_prefix=True,
+            )
+        if not meta:
             return {
                 "status": "error",
                 "error": (
                     f"Template '{template_filename}' não encontrado em "
-                    f"https://drive.google.com/drive/folders/{TEMPLATES_FOLDER_ID}"
+                    f"https://drive.google.com/drive/folders/{TEMPLATES_FOLDER_ID} "
+                    f"(busca exata e por prefixo '{_TEMPLATE_PREFIX[n_parties]}' falharam)"
                 ),
             }
 
