@@ -1866,13 +1866,17 @@ def _norm_grupo(g: str) -> str:
     return g
 
 
-@st.cache_data(ttl=120)
+@st.cache_data(ttl=600, show_spinner=False)
 def _load_planilha_pipeline() -> list[dict]:
     """
     Lê 'todos andamento' + 'Andamento Vietnã' do Google Sheets.
     Retorna lista de dicts normalizados, prontos para exibição.
+    TTL: 10 min. Timeout: 8s por chamada (falha rápida).
     """
+    import socket as _socket
+    _prev_timeout = _socket.getdefaulttimeout()
     try:
+        _socket.setdefaulttimeout(8)
         from services.google_drive import drive_manager
         from googleapiclient.discovery import build
         svc = build("sheets", "v4", credentials=drive_manager.creds)
@@ -1907,7 +1911,7 @@ def _load_planilha_pipeline() -> list[dict]:
                     "especificacao": g(11),
                     "situacao":    g(12),
                     "acao":        g(13),
-                    "responsavel": g(14),            # RESPONSÁVEL (Vietnã) / STATUS_AUTO (todos)
+                    "responsavel": g(14),
                     "fonte":       fonte,
                     "grupo_norm":  _norm_grupo(g(3)),
                 })
@@ -1916,18 +1920,22 @@ def _load_planilha_pipeline() -> list[dict]:
         deals = _parse(_read("todos andamento"), "🇧🇷 Andamento")
         deals += _parse(_read("Andamento Vietnã"), "🇻🇳 Vietnã")
         return deals
-    except Exception as _e:
+    except Exception:
         return []
+    finally:
+        _socket.setdefaulttimeout(_prev_timeout)
 
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=600, show_spinner=False)
 def _load_declinados() -> list[dict]:
     """
     Le aba 'Declinados' do Google Sheets (118 deals arquivados).
-    Mesma estrutura de colunas de 'todos andamento'.
-    Usado para PROC V de follow-ups e visualizacao historica no Pipeline.
+    TTL: 10 min. Timeout: 8s (falha rápida).
     """
+    import socket as _socket
+    _prev_timeout = _socket.getdefaulttimeout()
     try:
+        _socket.setdefaulttimeout(8)
         from services.google_drive import drive_manager
         from googleapiclient.discovery import build
         svc = build("sheets", "v4", credentials=drive_manager.creds)
@@ -1942,7 +1950,7 @@ def _load_declinados() -> list[dict]:
             def g(i, _row=row): return _row[i].strip() if i < len(_row) else ""
             job = g(0)
             if not job and not g(6):
-                continue   # linha vazia
+                continue
             results.append({
                 "job":           job or "—",
                 "data":          g(1),
@@ -1965,9 +1973,11 @@ def _load_declinados() -> list[dict]:
         return results
     except Exception:
         return []
+    finally:
+        _socket.setdefaulttimeout(_prev_timeout)
 
 
-@st.cache_data(ttl=120)
+@st.cache_data(ttl=600, show_spinner=False)
 def _sheet_enrich_index() -> dict[str, dict]:
     """
     Cria indice {grupo_norm: deal_dict} a partir de TODAS as abas de andamento
@@ -2420,6 +2430,31 @@ else:
     )
 
 st.markdown("<div style='margin-bottom:4px'></div>", unsafe_allow_html=True)
+
+# ========================
+# PRÉ-FETCH (antes dos tabs)
+# ========================
+# Dispara as chamadas lentas AQUI, fora dos tabs, para que o cache já
+# esteja quente quando cada aba renderizar. Na primeira carga o spinner
+# aparece neste ponto (previsível); nas seguintes retorna instantâneo.
+if not st.session_state.get("_sheets_prefetched"):
+    with st.spinner("Sincronizando pipeline com Google Sheets..."):
+        try:
+            _load_planilha_pipeline()
+            _load_declinados()
+        except Exception:
+            pass
+    st.session_state["_sheets_prefetched"] = True
+else:
+    # Já aquecido — atualiza em background sem bloquear
+    import threading as _threading
+    def _bg_sheets():
+        try:
+            _load_planilha_pipeline()
+            _load_declinados()
+        except Exception:
+            pass
+    _threading.Thread(target=_bg_sheets, daemon=True).start()
 
 # ========================
 # ABAS
