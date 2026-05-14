@@ -5,6 +5,7 @@ Motor de Ingestao de Dados de Mercado (Fisico + Bolsas + Macro).
 Inteligencia senior de scrapers blindados e fallbacks.
 """
 import sys
+import time
 import logging
 import requests
 import re
@@ -238,9 +239,10 @@ class ExternalDataService:
     @classmethod
     def get_bunker_proxy_price(cls, db) -> float:
         try:
-            hist = yf.Ticker("BZ=F").history(period="1d")
-            if not hist.empty:
-                return cls._safe_float((hist["Close"].iloc[-1] * 7.3) + 50, cls.FALLBACK_BUNKER)
+            closes = cls._fetch_batch()
+            vals = cls._close(closes, "BZ=F")
+            if vals:
+                return cls._safe_float((vals[-1] * 7.3) + 50, cls.FALLBACK_BUNKER)
         except Exception: pass
         last = db.query(MarketSnapshot).filter(MarketSnapshot.bunker_vlsfo > 0).order_by(MarketSnapshot.timestamp.desc()).first()
         return last.bunker_vlsfo if last else cls.FALLBACK_BUNKER
@@ -248,9 +250,10 @@ class ExternalDataService:
     @classmethod
     def get_daily_hire_panamax(cls, db) -> float:
         try:
-            hist = yf.Ticker("^BDI").history(period="1d")
-            if not hist.empty:
-                return cls._safe_float(hist["Close"].iloc[-1] * 12, cls.FALLBACK_DAILY_HIRE)
+            closes = cls._fetch_batch()
+            vals = cls._close(closes, "^BDI")
+            if vals:
+                return cls._safe_float(vals[-1] * 12, cls.FALLBACK_DAILY_HIRE)
         except Exception: pass
         last = db.query(MarketSnapshot).filter(MarketSnapshot.daily_hire > 0).order_by(MarketSnapshot.timestamp.desc()).first()
         return last.daily_hire if last else cls.FALLBACK_DAILY_HIRE
@@ -258,22 +261,79 @@ class ExternalDataService:
     @classmethod
     def get_usd_brl(cls) -> float:
         try:
-            hist = yf.Ticker("USDBRL=X").history(period="1d")
-            if not hist.empty: return cls._safe_float(hist["Close"].iloc[-1], cls.FALLBACK_USD_BRL)
+            closes = cls._fetch_batch()
+            vals = cls._close(closes, "USDBRL=X")
+            if vals:
+                return cls._safe_float(vals[-1], cls.FALLBACK_USD_BRL)
         except Exception: pass
         return cls.FALLBACK_USD_BRL
+
+    # Cache interno para o batch download — evita chamadas duplicadas no mesmo ciclo
+    _yf_batch_cache: dict = {}
+    _yf_batch_ts: float = 0.0
+    _YF_BATCH_TTL: float = 240.0  # 4 min
+
+    @classmethod
+    def _fetch_batch(cls) -> "pd.DataFrame":
+        """
+        Baixa TODOS os tickers de uma vez com yf.download() (threaded).
+        Cache interno de 4 min evita re-download dentro do mesmo ciclo de update.
+        Retorna DataFrame MultiIndex [Close][sym] ou DataFrame simples (1 ticker).
+        """
+        now = time.monotonic()
+        if now - cls._yf_batch_ts < cls._YF_BATCH_TTL and cls._yf_batch_cache:
+            return cls._yf_batch_cache.get("df", pd.DataFrame())
+
+        symbols = ["ZS=F", "ZC=F", "SB=F", "USDBRL=X",
+                   "ZM=F", "CC=F", "KC=F", "CT=F",
+                   "BZ=F", "^BDI"]
+        try:
+            df = yf.download(
+                symbols, period="2d",
+                auto_adjust=True, progress=False, threads=True,
+                timeout=12,
+            )
+            # yf.download com >1 símbolo → MultiIndex (Close, sym); com 1 → plano
+            if isinstance(df.columns, pd.MultiIndex):
+                closes = df["Close"] if "Close" in df.columns.get_level_values(0) else pd.DataFrame()
+            else:
+                closes = df[["Close"]] if "Close" in df.columns else pd.DataFrame()
+            cls._yf_batch_cache = {"df": closes}
+            cls._yf_batch_ts = now
+            return closes
+        except Exception as e:
+            logger.warning("[BATCH] yf.download falhou: %s", e)
+            return pd.DataFrame()
+
+    @classmethod
+    def _close(cls, closes: "pd.DataFrame", sym: str) -> list:
+        """Retorna lista de closes para um símbolo; vazia se ausente."""
+        try:
+            if sym in closes.columns:
+                return closes[sym].dropna().tolist()
+            if "Close" in closes.columns:   # fallback: df plano (1 símbolo)
+                return closes["Close"].dropna().tolist()
+        except Exception:
+            pass
+        return []
 
     @classmethod
     def get_bolsas_usd_mt(cls):
         res = {"cbot_soy_usd_mt": cls.FALLBACK_SOY, "cbot_corn_usd_mt": cls.FALLBACK_CORN, "ice_sugar_usd_mt": cls.FALLBACK_SUGAR}
         try:
-            soy_raw = yf.Ticker("ZS=F").history(period="1d")["Close"].iloc[-1]
-            corn_raw = yf.Ticker("ZC=F").history(period="1d")["Close"].iloc[-1]
-            sugar_raw = yf.Ticker("SB=F").history(period="1d")["Close"].iloc[-1]
+            closes = cls._fetch_batch()
+            soy_vals   = cls._close(closes, "ZS=F")
+            corn_vals  = cls._close(closes, "ZC=F")
+            sugar_vals = cls._close(closes, "SB=F")
 
-            res["cbot_soy_usd_mt"] = (soy_raw / 100 if soy_raw > 100 else soy_raw) * 36.7437
-            res["cbot_corn_usd_mt"] = (corn_raw / 100 if corn_raw > 100 else corn_raw) * 39.3680
-            res["ice_sugar_usd_mt"] = sugar_raw * 22.0462
+            if soy_vals:
+                soy_raw = soy_vals[-1]
+                res["cbot_soy_usd_mt"] = (soy_raw / 100 if soy_raw > 100 else soy_raw) * 36.7437
+            if corn_vals:
+                corn_raw = corn_vals[-1]
+                res["cbot_corn_usd_mt"] = (corn_raw / 100 if corn_raw > 100 else corn_raw) * 39.3680
+            if sugar_vals:
+                res["ice_sugar_usd_mt"] = sugar_vals[-1] * 22.0462
         except Exception as e:
             logger.warning(f"[FINANCE] Falha na extracao live. Aplicando fallbacks. Erro: {e}")
         return res
@@ -313,25 +373,21 @@ class ExternalDataService:
     @classmethod
     def get_extended_tickers(cls) -> dict:
         """
-        Busca cotações ao vivo dos 4 tickers estendidos via Yahoo Finance
-        e devolve dict {key: {valor_usd_mt, variacao_pct}}.
-
-        Fallback por ticker individual — falha isolada não derruba o conjunto.
+        Busca cotações ao vivo dos 4 tickers estendidos via batch download.
+        Uma única chamada yf.download() substituiu 4 chamadas sequenciais.
         """
         result: dict = {}
+        closes = cls._fetch_batch()
         for sym, cfg in cls.EXTENDED_TICKERS.items():
             try:
-                hist = yf.Ticker(sym).history(period="2d")
-                if hist.empty:
+                vals = cls._close(closes, sym)
+                if not vals:
                     raise ValueError("sem dados")
-                closes = hist["Close"].dropna()
-                current_raw = float(closes.iloc[-1])
-                prev_raw    = float(closes.iloc[-2]) if len(closes) >= 2 else current_raw
-
+                current_raw = float(vals[-1])
+                prev_raw    = float(vals[-2]) if len(vals) >= 2 else current_raw
                 current_usd = cfg["conv"](current_raw)
                 prev_usd    = cfg["conv"](prev_raw)
                 variacao    = ((current_usd - prev_usd) / prev_usd * 100) if prev_usd else 0.0
-
                 result[cfg["key"]] = {
                     "valor":    round(current_usd, 2),
                     "variacao": round(variacao, 4),

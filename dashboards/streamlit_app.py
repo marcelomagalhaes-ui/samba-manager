@@ -1541,26 +1541,29 @@ def load_market():
         return {}
     try:
         result = market_data.get_market_overview()
-        # Se DB retornou zeros, busca ao vivo no yfinance
+        # Se DB retornou zeros, busca ao vivo via batch (1 chamada, não 4)
         if result.get("SOY_CBOT (USD/MT)", {}).get("valor", 0) == 0:
             raise ValueError("zero values from DB")
         return result
     except Exception:
         pass
     try:
-        import yfinance as _yf
-        _soy  = float(_yf.Ticker("ZS=F").history(period="2d")["Close"].iloc[-1])
-        _corn = float(_yf.Ticker("ZC=F").history(period="2d")["Close"].iloc[-1])
-        _sug  = float(_yf.Ticker("SB=F").history(period="2d")["Close"].iloc[-1])
-        _fx   = float(_yf.Ticker("USDBRL=X").history(period="2d")["Close"].iloc[-1])
-        soy_mt  = round((_soy  / 100) * 36.7437, 2)
-        corn_mt = round((_corn / 100) * 39.3680, 2)
-        sug_mt  = round(_sug  * 22.0462, 2)
+        from services.market_data import ExternalDataService as _EDS
+        closes = _EDS._fetch_batch()
+
+        def _last(sym):
+            vals = _EDS._close(closes, sym)
+            return float(vals[-1]) if vals else 0.0
+
+        _soy  = _last("ZS=F")
+        _corn = _last("ZC=F")
+        _sug  = _last("SB=F")
+        _fx   = _last("USDBRL=X")
         return {
-            "SOY_CBOT (USD/MT)":   {"valor": soy_mt,  "variacao": 0.0},
-            "CORN_CBOT (USD/MT)":  {"valor": corn_mt, "variacao": 0.0},
-            "SUGAR_ICE (USD/MT)":  {"valor": sug_mt,  "variacao": 0.0},
-            "USD/BRL":             {"valor": round(_fx, 4), "variacao": 0.0},
+            "SOY_CBOT (USD/MT)":  {"valor": round((_soy  / 100) * 36.7437, 2), "variacao": 0.0},
+            "CORN_CBOT (USD/MT)": {"valor": round((_corn / 100) * 39.3680, 2), "variacao": 0.0},
+            "SUGAR_ICE (USD/MT)": {"valor": round(_sug * 22.0462, 2),          "variacao": 0.0},
+            "USD/BRL":            {"valor": round(_fx, 4),                      "variacao": 0.0},
         }
     except Exception:
         return {}
@@ -1570,10 +1573,8 @@ def load_market():
 def load_extended_market() -> dict:
     """
     Overview estendido para o Ticker: base + FARELO, CACAU, CAFE, ALGODAO.
-    Cache 5 min — tickers extended buscados ao vivo no Yahoo Finance.
-    Fallback progressivo: extended → base → vazio.
+    Cache 5 min — batch download único (1 chamada HTTP, não 8 sequenciais).
     """
-    # Tenta o overview completo (requer restart do Streamlit para pegar módulo novo)
     if market_data is None:
         return {}
     try:
@@ -1581,12 +1582,11 @@ def load_extended_market() -> dict:
             return market_data.get_extended_overview()
     except Exception:
         pass
-
-    # Fallback: busca tickers extras diretamente via yfinance sem passar pelo módulo
+    # Fallback direto via batch — evita 4 chamadas sequenciais
     try:
-        import yfinance as _yf
-        base = market_data.get_market_overview()
-
+        from services.market_data import ExternalDataService as _EDS
+        base   = market_data.get_market_overview()
+        closes = _EDS._fetch_batch()
         _EXTRA = {
             "ZM=F": ("FARELO SOJA (USD/MT)", lambda p: p * 1.10231, 320.0),
             "CC=F": ("CACAU ICE (USD/MT)",   lambda p: p,            8000.0),
@@ -1594,29 +1594,23 @@ def load_extended_market() -> dict:
             "CT=F": ("ALGODAO ICE (USD/MT)", lambda p: p * 22.0462,  1700.0),
         }
         ordered = {k: v for k, v in base.items() if k != "USD/BRL"}
-
         for sym, (key, conv, fb) in _EXTRA.items():
             try:
-                hist = _yf.Ticker(sym).history(period="2d")
-                closes = hist["Close"].dropna() if not hist.empty else []
-                if len(closes) >= 1:
-                    cur  = conv(float(closes.iloc[-1]))
-                    prev = conv(float(closes.iloc[-2])) if len(closes) >= 2 else cur
+                vals = _EDS._close(closes, sym)
+                if vals:
+                    cur  = conv(float(vals[-1]))
+                    prev = conv(float(vals[-2])) if len(vals) >= 2 else cur
                     var  = ((cur - prev) / prev * 100) if prev else 0.0
                     ordered[key] = {"valor": round(cur, 2), "variacao": round(var, 4)}
                 else:
                     ordered[key] = {"valor": fb, "variacao": 0.0}
             except Exception:
                 ordered[key] = {"valor": fb, "variacao": 0.0}
-
         if "USD/BRL" in base:
             ordered["USD/BRL"] = base["USD/BRL"]
         return ordered
-
     except Exception:
-        if market_data is None:
-            return {}
-        return market_data.get_market_overview()
+        return market_data.get_market_overview() if market_data else {}
 
 
 def _load_geo_feed(force_api: bool = False) -> dict:
@@ -2288,15 +2282,23 @@ with _mkt_col:
     _mkt_refresh = st.button("⟳ Atualizar Mercado", key="mkt_update_btn", help="Busca dados atualizados de Bolsas (CBOT/ICE), câmbio e praças físicas")
 if _mkt_refresh:
     try:
-        from services.market_data import update_all_market_data
-        with st.spinner("Atualizando dados de mercado..."):
-            update_all_market_data()
+        # Limpa cache imediatamente — próximo render busca dados frescos
         load_market.clear()
         load_extended_market.clear()
-        st.success("Dados de mercado atualizados!")
+        # Dispara update em thread separada — não bloqueia o Streamlit
+        import threading as _threading
+        from services.market_data import update_all_market_data as _upd_mkt, ExternalDataService as _EDS
+        def _bg_update():
+            try:
+                _EDS._yf_batch_ts = 0.0   # invalida cache batch
+                _upd_mkt()
+            except Exception:
+                pass
+        _threading.Thread(target=_bg_update, daemon=True).start()
+        st.toast("Atualizando mercado em segundo plano — dados frescos em ~15s", icon="📡")
         st.rerun()
     except Exception as _mkt_err:
-        st.error(f"Erro ao atualizar mercado: {_mkt_err}")
+        st.error(f"Erro ao iniciar atualização: {_mkt_err}")
 
 # ========================
 # GEOPOLITICAL NEWS FEED
