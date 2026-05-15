@@ -286,7 +286,7 @@ class ExternalDataService:
 
         symbols = ["ZS=F", "ZC=F", "SB=F", "USDBRL=X",
                    "ZM=F", "CC=F", "KC=F", "CT=F",
-                   "BZ=F", "^BDI"]
+                   "BZ=F"]
         try:
             df = yf.download(
                 symbols, period="2d",

@@ -366,7 +366,18 @@ def get_engine(url: str = None):
     # Session Pooler (pooler.supabase.com) já usa IPv4 — não alterar.
     if isinstance(url, str) and "pooler.supabase.com" not in url and "db." in url and "supabase.co:5432" in url:
         url = url.replace(":5432/", ":6543/")
-    return create_engine(url, echo=False)
+    # Pool conservador: evita EMAXCONNSESSION no Supabase Session Pooler (limite ~15)
+    # pool_size=3 + max_overflow=2 → máximo 5 conexões simultâneas por instância
+    pool_kwargs: dict = {}
+    if "sqlite" not in url:
+        pool_kwargs = dict(
+            pool_size=3,
+            max_overflow=2,
+            pool_pre_ping=True,
+            pool_recycle=300,
+            pool_timeout=10,
+        )
+    return create_engine(url, echo=False, **pool_kwargs)
 
 
 def create_tables(url: str = None):
