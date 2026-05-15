@@ -732,8 +732,9 @@ def process_price_indication(payload: dict) -> dict:
         # 1. Carregar template
         tpl_bytes = _pi_load_template(tname)
         if not tpl_bytes:
+            errs = "; ".join(_PI_LAST_LOAD_ERRORS) if _PI_LAST_LOAD_ERRORS else "sem detalhes"
             return {"filename": "", "web_link": "", "file_bytes": None,
-                    "error": f"Template '{tname}' não encontrado (Drive + fallback local)."}
+                    "error": f"Template '{tname}' nao encontrado. Tentativas: {errs}"}
 
         # 2. Montar tabela de substituições
         subs = _pi_build_subs(dyn, fin)
@@ -781,46 +782,77 @@ def _pi_load_template(template_name: str) -> Optional[bytes]:
       1. Busca por nome na pasta Drive correta
       2. Acesso direto pelo file ID (bypassa busca — robusto no Streamlit Cloud)
       3. Fallback local (ambiente Windows com drive mapeado)
+
+    Em caso de falha total, deixa rastro detalhado no logger e em
+    _PI_LAST_LOAD_ERRORS para o widget exibir ao usuário.
     """
+    global _PI_LAST_LOAD_ERRORS
+    _PI_LAST_LOAD_ERRORS = []
+
     try:
         from services.google_drive import DriveManager
         drive = DriveManager()
+        if not getattr(drive, "service", None):
+            _PI_LAST_LOAD_ERRORS.append("Drive service nao inicializado (token expirado no Streamlit Cloud?)")
+            logger.warning("Drive service nao inicializado para template PI")
 
         # 1. Busca por nome na pasta
-        if template_name:
-            meta = drive.find_file_by_name(
-                template_name, _PI_TEMPLATES_FOLDER_ID,
-                ignore_underscore_prefix=True,
-            )
-            if meta:
-                b = drive.fetch_as_docx_bytes(meta)
-                if b:
-                    logger.info("Template PI carregado do Drive (busca): %s", template_name)
-                    return b
+        if template_name and getattr(drive, "service", None):
+            try:
+                meta = drive.find_file_by_name(
+                    template_name, _PI_TEMPLATES_FOLDER_ID,
+                    ignore_underscore_prefix=True,
+                )
+                if meta:
+                    b = drive.fetch_as_docx_bytes(meta)
+                    if b:
+                        logger.info("Template PI carregado do Drive (busca): %s", template_name)
+                        return b
+                    else:
+                        _PI_LAST_LOAD_ERRORS.append(f"find_file_by_name OK mas fetch_as_docx_bytes retornou vazio")
+                else:
+                    _PI_LAST_LOAD_ERRORS.append(f"find_file_by_name nao achou '{template_name}' em {_PI_TEMPLATES_FOLDER_ID}")
+            except Exception as exc:
+                _PI_LAST_LOAD_ERRORS.append(f"find_file_by_name erro: {exc}")
+                logger.warning("PI find_file_by_name falhou: %s", exc)
 
         # 2. ID direto (fallback quando busca falha no Cloud)
-        try:
-            file_meta = drive.service.files().get(
-                fileId=_PI_TEMPLATE_FILE_ID,
-                fields="id,name,mimeType",
-                supportsAllDrives=True,
-            ).execute()
-            b = drive.fetch_as_docx_bytes(file_meta)
-            if b:
-                logger.info("Template PI carregado do Drive (ID direto): %s", _PI_TEMPLATE_FILE_ID)
-                return b
-        except Exception as exc:
-            logger.warning("Template PI por ID falhou: %s", exc)
+        if getattr(drive, "service", None):
+            try:
+                file_meta = drive.service.files().get(
+                    fileId=_PI_TEMPLATE_FILE_ID,
+                    fields="id,name,mimeType",
+                    supportsAllDrives=True,
+                ).execute()
+                b = drive.fetch_as_docx_bytes(file_meta)
+                if b:
+                    logger.info("Template PI carregado do Drive (ID direto): %s", _PI_TEMPLATE_FILE_ID)
+                    return b
+                else:
+                    _PI_LAST_LOAD_ERRORS.append(f"files().get(ID direto) OK mas fetch vazio")
+            except Exception as exc:
+                _PI_LAST_LOAD_ERRORS.append(f"files().get(ID direto) erro: {exc}")
+                logger.warning("Template PI por ID falhou: %s", exc)
 
     except Exception as exc:
-        logger.warning("Drive indisponível para template PI: %s", exc)
+        _PI_LAST_LOAD_ERRORS.append(f"DriveManager() erro: {exc}")
+        logger.warning("Drive indisponivel para template PI: %s", exc)
 
     # 3. Fallback local
-    if _PI_TEMPLATE_LOCAL.exists():
-        logger.info("Template PI local: %s", _PI_TEMPLATE_LOCAL)
-        return _PI_TEMPLATE_LOCAL.read_bytes()
+    try:
+        if _PI_TEMPLATE_LOCAL.exists():
+            logger.info("Template PI local: %s", _PI_TEMPLATE_LOCAL)
+            return _PI_TEMPLATE_LOCAL.read_bytes()
+        else:
+            _PI_LAST_LOAD_ERRORS.append(f"Fallback local nao existe: {_PI_TEMPLATE_LOCAL}")
+    except Exception as exc:
+        _PI_LAST_LOAD_ERRORS.append(f"Fallback local erro: {exc}")
 
     return None
+
+
+# Buffer de erros de _pi_load_template — consultado pelo widget para diagnostico
+_PI_LAST_LOAD_ERRORS: list = []
 
 
 def _pi_build_subs(dyn: dict, fin: dict) -> dict:
