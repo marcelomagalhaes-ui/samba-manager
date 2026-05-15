@@ -744,60 +744,27 @@ def process_price_indication(payload: dict) -> dict:
             return {"filename": "", "web_link": "", "file_bytes": None,
                     "error": f"Renderização falhou: {exc}"}
 
-        # 4. Converter para PDF
-        pdf_failed = False
-        if fmt == "pdf":
-            pdf = _pi_to_pdf(docx_bytes)
-            if pdf:
-                out_bytes = pdf
-                ext       = "pdf"
-            else:
-                # PDF falhou — entrega o .docx como fallback
-                out_bytes  = docx_bytes
-                ext        = "docx"
-                pdf_failed = True
-                logger.warning("Conversão PDF falhou; retornando .docx como fallback")
-        else:
-            out_bytes = docx_bytes
-            ext       = "docx"
+        # 4. Nome do arquivo base
+        first   = dyn.get("FIRST NAME Company",
+                           company_full.split()[0])[:15].upper()
+        comm    = re.sub(r"[^A-Z0-9]", "_",
+                         dyn.get("COMODITIE_TYPE", "COMMODITY").upper())
+        today_s = datetime.date.today().strftime("%Y%m%d")
+        ref_code = f"PI_{first}_{comm}_{today_s}"
 
-        # 5. Nome do arquivo
-        first    = dyn.get("FIRST NAME Company",
-                            company_full.split()[0])[:15].upper()
-        comm     = re.sub(r"[^A-Z0-9]", "_",
-                          dyn.get("COMODITIE_TYPE", "COMMODITY").upper())
-        today_s  = datetime.date.today().strftime("%Y%m%d")
-        filename = f"PI_{first}_{comm}_{today_s}.{ext}"
+        if dry:
+            return {"filename": f"{ref_code}.docx", "web_link": "",
+                    "file_bytes": docx_bytes, "error": None, "pdf_failed": False}
 
-        # 6. Upload Drive
-        web_link = ""
-        file_id  = ""
-        if not dry:
-            try:
-                from services.google_drive import DriveManager
-                drive = DriveManager()
-                mime_in = (
-                    "application/pdf" if ext == "pdf"
-                    else "application/vnd.openxmlformats-officedocument"
-                         ".wordprocessingml.document"
-                )
-                resp    = drive.upload_file_bytes(
-                    filename=filename,
-                    content=out_bytes,
-                    folder_id=OUTPUT_FOLDER_ID,
-                    mime_type=mime_in,
-                    save_as_google_doc=False,
-                )
-                file_id  = (resp or {}).get("id", "")
-                web_link = (f"https://drive.google.com/file/d/{file_id}/view"
-                            if file_id else "")
-                logger.info("PI upload OK: %s → %s", filename, web_link)
-            except Exception as exc:
-                logger.warning("Upload Drive falhou: %s", exc)
-
-        return {"filename": filename, "web_link": web_link,
-                "file_bytes": out_bytes, "error": None,
-                "pdf_failed": pdf_failed}
+        # 5. Upload via Drive (GDoc → PDF) — mesma rota das proteínas, funciona no Cloud
+        try:
+            up = _upload_and_export(docx_bytes, ref_code)
+            return {"filename": f"{ref_code}.pdf", "web_link": up.get("web_link", ""),
+                    "file_bytes": up.get("file_bytes"), "error": None, "pdf_failed": False}
+        except Exception as exc:
+            logger.warning("Upload PI falhou: %s", exc)
+            return {"filename": f"{ref_code}.docx", "web_link": "",
+                    "file_bytes": docx_bytes, "error": None, "pdf_failed": True}
 
     except Exception as exc:
         logger.exception("process_price_indication inesperado")
