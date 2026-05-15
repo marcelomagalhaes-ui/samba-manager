@@ -1638,45 +1638,77 @@ def load_extended_market() -> dict:
         return market_data.get_market_overview() if market_data else {}
 
 
+_GEO_BG_THREAD = None  # singleton do fetch em background
+
 def _load_geo_feed(force_api: bool = False) -> dict:
     """
-    Carrega alertas geopolíticos.
+    Carrega alertas geopolíticos SEM BLOQUEAR.
 
-    Prioridade:
-      1. Arquivo data/geo_alerts_cache.json escrito pelo Celery Beat.
-      2. Se arquivo ausente OU force_api=True: chama NewsData.io diretamente
-         (usa chaves do .env; silencioso se não configuradas).
+    Estrategia non-blocking:
+      1. Le cache local (instantaneo, mesmo se stale)
+      2. Se cache stale OU ausente E ninguem ja esta buscando,
+         dispara fetch em background thread e retorna IMEDIATO
+      3. O proximo rerun (que o usuario dispara ao interagir) ja tem dados frescos
 
-    Sem @st.cache_data — leitura local é instantânea; API call fica no spinner.
+    Apenas force_api=True (botao Refresh manual) bloqueia para feedback visual.
     """
+    global _GEO_BG_THREAD
     _cache_file = ROOT / "data" / "geo_alerts_cache.json"
 
-    # ── Lê cache (Celery Beat OU última chamada direta) ────────────
-    # TTL diferenciado:
-    #   • Com alertas  → 6h  (quota preciosa, resultado estável)
-    #   • Sem alertas  → 30min (força nova tentativa mais cedo)
-    if not force_api and _cache_file.exists():
+    def _read_cache():
+        if _cache_file.exists():
+            try:
+                d = json.loads(_cache_file.read_text(encoding="utf-8"))
+                if isinstance(d, dict) and "alerts" in d:
+                    return d
+            except Exception:
+                pass
+        return None
+
+    # ── Le cache (sempre retorna se existir, mesmo se velho) ──────────────
+    cached = _read_cache()
+    needs_refresh = False
+    if cached:
+        import datetime as _dtt
+        ts_raw = cached.get("ts", "")
+        if ts_raw:
+            try:
+                cache_age = (_dtt.datetime.utcnow()
+                             - _dtt.datetime.fromisoformat(ts_raw[:19]))
+                has_alerts = bool(cached.get("alerts"))
+                ttl_sec    = 6 * 3600 if has_alerts else 30 * 60
+                needs_refresh = cache_age.total_seconds() >= ttl_sec
+            except Exception:
+                pass
+        else:
+            needs_refresh = True
+    else:
+        needs_refresh = True
+
+    # ── Dispara fetch em background se preciso, sem bloquear ──────────────
+    def _bg_fetch():
         try:
-            data = json.loads(_cache_file.read_text(encoding="utf-8"))
-            if isinstance(data, dict) and "alerts" in data:
-                import datetime as _dtt
-                ts_raw = data.get("ts", "")
-                if ts_raw:
-                    try:
-                        cache_age = (_dtt.datetime.utcnow()
-                                     - _dtt.datetime.fromisoformat(ts_raw[:19]))
-                        has_alerts = bool(data.get("alerts"))
-                        ttl_sec    = 6 * 3600 if has_alerts else 30 * 60
-                        if cache_age.total_seconds() < ttl_sec:
-                            return data  # cache válido
-                    except Exception:
-                        pass
-                else:
-                    return data  # sem timestamp → aceita mesmo assim
+            _do_geo_api_fetch(_cache_file)
         except Exception:
             pass
 
-    # ── Fallback: chamada direta à API (primeira carga ou botão refresh) ──
+    if (needs_refresh and not force_api):
+        import threading as _t
+        if _GEO_BG_THREAD is None or not _GEO_BG_THREAD.is_alive():
+            _GEO_BG_THREAD = _t.Thread(target=_bg_fetch, daemon=True)
+            _GEO_BG_THREAD.start()
+        # Retorna cache stale (ou vazio) — proxima interacao ja tem dados frescos
+        return cached or {"ts": "", "alerts": [], "source": "loading"}
+
+    if cached and not force_api:
+        return cached
+
+    # ── force_api=True: chamada SINCRONA (botao Refresh manual) ───────────
+    return _do_geo_api_fetch(_cache_file) or (cached or {"ts": "", "alerts": [], "source": "no_data"})
+
+
+def _do_geo_api_fetch(_cache_file) -> dict:
+    """Faz a chamada real a NewsData e persiste cache. Bloqueante."""
     try:
         import os as _os
         _has_key = bool(
