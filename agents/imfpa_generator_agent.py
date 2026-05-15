@@ -35,8 +35,12 @@ from services.imfpa_template_engine import (
 )
 
 # ─── Pastas no Drive ──────────────────────────────────────────────────────────
-TEMPLATES_FOLDER_ID = "1tglDYSL180AV1A2ugKgi1MJ8Jw4e0ewN"   # pasta IMFPA no Drive
-OUTPUT_FOLDER_ID    = "1CPlF_9TtEZ32B5eTAb4b4jRC-h7L10Z2"
+# Busca em ambas as pastas: pasta dedicada IMFPA e pasta geral de templates
+TEMPLATES_FOLDER_IDS = [
+    "1tglDYSL180AV1A2ugKgi1MJ8Jw4e0ewN",   # pasta IMFPA (Drive compartilhado)
+    "1M9GsOrKTBvQxQRde1D1HraS4kVevlg3v",   # pasta geral de templates (LOI etc.)
+]
+OUTPUT_FOLDER_ID = "1CPlF_9TtEZ32B5eTAb4b4jRC-h7L10Z2"
 
 # Nomes completos dos templates IMFPA no Drive
 # (podem estar salvos como Google Docs — find_file_by_name tenta com/sem .docx)
@@ -99,29 +103,30 @@ class IMFPAGeneratorAgent(BaseAgent):
 
         # ── Localizar template no Drive ───────────────────────────────────────
         template_filename = _TEMPLATE_NAMES[n_parties]
+        prefix            = _TEMPLATE_PREFIX[n_parties]
         self.log_action("locate_template", {"filename": template_filename, "n_parties": n_parties})
 
-        # Tenta match exato primeiro; fallback: busca pelo prefixo "1IMFPA" / "2IMFPA" etc.
-        meta = self.drive.find_file_by_name(
-            template_filename,
-            TEMPLATES_FOLDER_ID,
-            ignore_underscore_prefix=True,
-        )
-        if not meta:
-            prefix = _TEMPLATE_PREFIX[n_parties]   # ex: "1IMFPA"
-            self.log_action("locate_template_fallback", {"prefix": prefix})
-            meta = self.drive.find_file_by_prefix(
-                prefix,
-                TEMPLATES_FOLDER_ID,
-                ignore_underscore_prefix=True,
+        # Tenta em cada pasta da lista: exato → prefixo → próxima pasta
+        meta = None
+        for folder_id in TEMPLATES_FOLDER_IDS:
+            meta = self.drive.find_file_by_name(
+                template_filename, folder_id, ignore_underscore_prefix=True,
             )
+            if not meta:
+                meta = self.drive.find_file_by_prefix(
+                    prefix, folder_id, ignore_underscore_prefix=True,
+                )
+            if meta:
+                self.log_action("template_found", {"folder": folder_id, "file": meta["name"]})
+                break
+
         if not meta:
             return {
                 "status": "error",
                 "error": (
-                    f"Template '{template_filename}' não encontrado em "
-                    f"https://drive.google.com/drive/folders/{TEMPLATES_FOLDER_ID} "
-                    f"(busca exata e por prefixo '{_TEMPLATE_PREFIX[n_parties]}' falharam)"
+                    f"Template '{template_filename}' não encontrado em nenhuma das pastas "
+                    f"configuradas. Verifique se os arquivos IMFPA estão no Drive e se a "
+                    f"conta tem acesso. Pastas verificadas: {TEMPLATES_FOLDER_IDS}"
                 ),
             }
 
