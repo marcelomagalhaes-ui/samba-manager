@@ -34,23 +34,25 @@ from services.imfpa_template_engine import (
     render_imfpa,
 )
 
-# ─── Pastas no Drive ──────────────────────────────────────────────────────────
-# Busca em ambas as pastas: pasta dedicada IMFPA e pasta geral de templates
-TEMPLATES_FOLDER_IDS = [
-    "1tglDYSL180AV1A2ugKgi1MJ8Jw4e0ewN",   # pasta IMFPA (Drive compartilhado)
-    "1M9GsOrKTBvQxQRde1D1HraS4kVevlg3v",   # pasta geral de templates (LOI etc.)
-]
-OUTPUT_FOLDER_ID = "1CPlF_9TtEZ32B5eTAb4b4jRC-h7L10Z2"
+# ─── Pastas e arquivos no Drive ───────────────────────────────────────────────
+TEMPLATES_FOLDER_ID = "1tglDYSL180AV1A2ugKgi1MJ8Jw4e0ewN"   # pasta IMFPA
+OUTPUT_FOLDER_ID    = "1CPlF_9TtEZ32B5eTAb4b4jRC-h7L10Z2"
 
-# Nomes completos dos templates IMFPA no Drive
-# (podem estar salvos como Google Docs — find_file_by_name tenta com/sem .docx)
+# Nomes completos dos templates
 _TEMPLATE_NAMES = {
     1: "1IMFPA - SAMBA INTERM DE NEGOCIOS (EN).docx",
     2: "2IMFPA - SAMBA INTERM DE NEGOCIOS (EN).docx",
     3: "3IMFPA - SAMBA INTERM DE NEGOCIOS (EN).docx",
 }
-# Prefixos para busca tolerante (find_file_by_prefix)
 _TEMPLATE_PREFIX = {1: "1IMFPA", 2: "2IMFPA", 3: "3IMFPA"}
+
+# IDs diretos dos Google Docs (fallback quando a busca por nome falha)
+# Google Doc preferido pois é a versão editável mantida no Drive
+_TEMPLATE_GDOC_IDS = {
+    1: "1ZaQGeim8fKxDeZZkXp7PP7EeRcrOXWeig28u-cvI-bs",
+    2: "1dM0drH_MkobN_fZwsx9CmH4MD8gqk78xFjB20hM2PT8",
+    3: "1gCsla7cKAJkq4Oa3xNWX8c5kmBf9WXOdFMsoyzvwleU",
+}
 
 
 class IMFPAGeneratorAgent(BaseAgent):
@@ -106,27 +108,36 @@ class IMFPAGeneratorAgent(BaseAgent):
         prefix            = _TEMPLATE_PREFIX[n_parties]
         self.log_action("locate_template", {"filename": template_filename, "n_parties": n_parties})
 
-        # Tenta em cada pasta da lista: exato → prefixo → próxima pasta
-        meta = None
-        for folder_id in TEMPLATES_FOLDER_IDS:
-            meta = self.drive.find_file_by_name(
-                template_filename, folder_id, ignore_underscore_prefix=True,
+        # Passo 1: busca por nome exato na pasta
+        meta = self.drive.find_file_by_name(
+            template_filename, TEMPLATES_FOLDER_ID, ignore_underscore_prefix=True,
+        )
+        # Passo 2: busca por prefixo
+        if not meta:
+            meta = self.drive.find_file_by_prefix(
+                prefix, TEMPLATES_FOLDER_ID, ignore_underscore_prefix=True,
             )
-            if not meta:
-                meta = self.drive.find_file_by_prefix(
-                    prefix, folder_id, ignore_underscore_prefix=True,
-                )
-            if meta:
-                self.log_action("template_found", {"folder": folder_id, "file": meta["name"]})
-                break
+        # Passo 3: fallback direto pelo ID do Google Doc (bypassa busca)
+        if not meta:
+            gdoc_id = _TEMPLATE_GDOC_IDS.get(n_parties)
+            if gdoc_id:
+                self.log_action("locate_template_by_id", {"gdoc_id": gdoc_id})
+                try:
+                    file_meta = self.drive.service.files().get(
+                        fileId=gdoc_id,
+                        fields="id,name,mimeType",
+                        supportsAllDrives=True,
+                    ).execute()
+                    meta = file_meta
+                except Exception as exc:
+                    self.log_action("locate_template_by_id_failed", {"error": str(exc)})
 
         if not meta:
             return {
                 "status": "error",
                 "error": (
-                    f"Template '{template_filename}' não encontrado em nenhuma das pastas "
-                    f"configuradas. Verifique se os arquivos IMFPA estão no Drive e se a "
-                    f"conta tem acesso. Pastas verificadas: {TEMPLATES_FOLDER_IDS}"
+                    f"Template IMFPA ({n_parties} parte(s)) não encontrado. "
+                    f"Busca por nome, prefixo e ID direto falharam."
                 ),
             }
 
