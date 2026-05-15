@@ -865,30 +865,65 @@ _PI_LAST_LOAD_ERRORS: list = []
 def _pi_build_subs(dyn: dict, fin: dict) -> dict:
     """
     Monta a tabela de substituições {MARCADOR} → valor.
-    Template V3: (Port} removido — apenas {CITY} e {COUNTRY} para o incoterm.
+
+    Marcadores do GDoc atual (validado contra PDF gerado em 15/05/2026):
+      Dinâmicos:
+        {COMODITIE_TYPE}, {CITY}, {COUNTRY},
+        {DD/MM/YYYY}, {MM}, {YYYY},
+        {FIRST NAME Company}, {FULL NAME Company}, {PORTO}
+      Financeiros (todos com sufixo " USD" / " USD XXX,XX"):
+        {PRICE BASIS - USD XXX,XX}
+        {BASIS REFERENCIA PORTO}
+        {PRICE FOB USD}
+        {PRICE FREIGHT USD}
+        {FINAL_PRICE USD}
+        {TOTAL_COMISSION_CONTRACT_USD}
+        {QUANTITY_MT}
+
+    Mantemos chaves antigas (PRICE BASIS , PRICE  FOB, etc.) como fallback
+    caso o template volte a versao anterior.
     """
+    price_basis           = fin.get("PRICE BASIS", "")
+    basis_porto_ref       = fin.get("BASIS REFERENCIA PORTO", "")
+    price_fob             = fin.get("PRICE FOB", "")
+    price_freight         = fin.get("PRICE FREIGHT", "")
+    final_price           = fin.get("FINAL_PRICE", "")
+    comission_total       = fin.get("COMISSION_CONTRACT", "5,00")
+    quantity_mt           = fin.get("QUANTITY_MT", "")
+
     return {
         # — dinâmicos —
-        "COMODITIE_TYPE":             dyn.get("COMODITIE_TYPE", ""),
-        "CITY":                       dyn.get("CITY", "Main Port"),
-        "COUNTRY":                    dyn.get("COUNTRY", ""),
-        "DD/MM/YYYY":                 dyn.get("DD/MM/YYYY",
-                                              datetime.date.today().strftime("%d/%m/%Y")),
-        "MM":                         dyn.get("MM",
-                                              datetime.date.today().strftime("%m")),
-        "YYYY":                       dyn.get("YYYY",
-                                              str(datetime.date.today().year)),
-        "FIRST NAME Company":         dyn.get("FIRST NAME Company", ""),
-        "FULL NAME Company":          dyn.get("FULL NAME Company", ""),
-        "PORTO":                      dyn.get("PORTO", ""),
-        # — financeiros (nomes EXATOS do XML — atenção a espaços e ausência de "USD") —
-        "PRICE BASIS ":               fin.get("PRICE BASIS", ""),       # ← trailing space no XML
-        "BASIS REFERENCIA PORTO":     fin.get("BASIS REFERENCIA PORTO", ""),
-        "PRICE  FOB":                 fin.get("PRICE FOB", ""),         # ← duplo espaço, sem " USD"
-        "PRICE FREIGHT":              fin.get("PRICE FREIGHT", ""),     # ← sem " USD"
-        "FINAL_PRICE":                fin.get("FINAL_PRICE", ""),       # ← marcador simples (V2 template)
-        "COMISSION_CONTRACT":         fin.get("COMISSION_CONTRACT", "5,00"),
-        "QUANTITY_MT ":               fin.get("QUANTITY_MT", ""),       # ← trailing space no XML
+        "COMODITIE_TYPE":              dyn.get("COMODITIE_TYPE", ""),
+        "CITY":                        dyn.get("CITY", "Main Port"),
+        "COUNTRY":                     dyn.get("COUNTRY", ""),
+        "DD/MM/YYYY":                  dyn.get("DD/MM/YYYY",
+                                               datetime.date.today().strftime("%d/%m/%Y")),
+        "MM":                          dyn.get("MM",
+                                               datetime.date.today().strftime("%m")),
+        "YYYY":                        dyn.get("YYYY",
+                                               str(datetime.date.today().year)),
+        "FIRST NAME Company":          dyn.get("FIRST NAME Company", ""),
+        "FULL NAME Company":           dyn.get("FULL NAME Company", ""),
+        "PORTO":                       dyn.get("PORTO", ""),
+        "Port":                        dyn.get("PORTO", ""),    # cobre {Port} simples
+        # — financeiros (marcadores novos do GDoc atual) —
+        # NOTA: template tem typos com DOUBLE SPACE em PRICE  FOB e FINAL_PRICE  USD
+        "PRICE BASIS - USD XXX,XX":    f"USD {price_basis}" if price_basis else "",
+        "BASIS REFERENCIA PORTO":      basis_porto_ref,
+        "PRICE FOB USD":               f"USD {price_fob}" if price_fob else "",
+        "PRICE  FOB USD":              f"USD {price_fob}" if price_fob else "",  # double space
+        "PRICE FREIGHT USD":           f"USD {price_freight}" if price_freight else "",
+        "FINAL_PRICE USD":             f"USD {final_price}" if final_price else "",
+        "FINAL_PRICE  USD":            f"USD {final_price}" if final_price else "",  # double space
+        "TOTAL_COMISSION_CONTRACT_USD": f"USD {comission_total}" if comission_total else "",
+        "QUANTITY_MT":                 quantity_mt,
+        # — fallbacks para templates antigos (compat) —
+        "PRICE BASIS ":                price_basis,
+        "PRICE  FOB":                  price_fob,
+        "PRICE FREIGHT":               price_freight,
+        "FINAL_PRICE":                 final_price,
+        "COMISSION_CONTRACT":          comission_total,
+        "QUANTITY_MT ":                quantity_mt,
     }
 
 
@@ -921,9 +956,16 @@ def _pi_render(tpl_bytes: bytes, subs: dict) -> bytes:
     _TAG_R = f"{{{_W}}}r"
     _TAG_T = f"{{{_W}}}t"
 
+    # PORTO eh usado para substituir typos do template tipo "(Port}" (sem { abrindo)
+    _porto_value = str(subs.get("PORTO", ""))
+
     def _sub(text: str) -> str:
+        # 1) Marcadores normais {KEY}
         for k, v in subs.items():
             text = text.replace(f"{{{k}}}", str(v))
+        # 2) Typos conhecidos do template (literais, sem chave aberta)
+        #    Aparecem como "(Port}" em "CIF Main Port, (Port}, COUNTRY"
+        text = text.replace("(Port}", _porto_value)
         return text
 
     def _process_para(p_elem) -> None:
