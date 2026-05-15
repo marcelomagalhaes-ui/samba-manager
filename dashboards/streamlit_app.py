@@ -2443,24 +2443,15 @@ st.markdown("<div style='margin-bottom:4px'></div>", unsafe_allow_html=True)
 # Dispara as chamadas lentas AQUI, fora dos tabs, para que o cache já
 # esteja quente quando cada aba renderizar. Na primeira carga o spinner
 # aparece neste ponto (previsível); nas seguintes retorna instantâneo.
-if not st.session_state.get("_sheets_prefetched"):
-    with st.spinner("Sincronizando pipeline com Google Sheets..."):
-        try:
-            _load_planilha_pipeline()
-            _load_declinados()
-        except Exception:
-            pass
-    st.session_state["_sheets_prefetched"] = True
-else:
-    # Já aquecido — atualiza em background sem bloquear
-    import threading as _threading
-    def _bg_sheets():
-        try:
-            _load_planilha_pipeline()
-            _load_declinados()
-        except Exception:
-            pass
-    _threading.Thread(target=_bg_sheets, daemon=True).start()
+# Sheets sempre em background — nunca bloqueia o render inicial
+import threading as _threading
+def _bg_sheets():
+    try:
+        _load_planilha_pipeline()
+        _load_declinados()
+    except Exception:
+        pass
+_threading.Thread(target=_bg_sheets, daemon=True).start()
 
 # ========================
 # ABAS

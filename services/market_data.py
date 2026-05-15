@@ -291,7 +291,7 @@ class ExternalDataService:
             df = yf.download(
                 symbols, period="2d",
                 auto_adjust=True, progress=False, threads=True,
-                timeout=12,
+                timeout=4,
             )
             # yf.download com >1 símbolo → MultiIndex (Close, sym); com 1 → plano
             if isinstance(df.columns, pd.MultiIndex):
