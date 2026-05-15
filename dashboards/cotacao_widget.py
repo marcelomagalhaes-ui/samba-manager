@@ -1454,8 +1454,15 @@ def _show_result(result: dict, key_suffix: str = "") -> None:
 
 # ─── Entry point ──────────────────────────────────────────────────────────────
 
-def render_cotacao_tab() -> None:
-    """Chamado dentro de `with abas[1]:` no streamlit_app.py."""
+# st.fragment isola o rerun: alterar widgets dentro do fragment NAO refaz a
+# app inteira — apenas o bloco do fragment. Resolve o problema de "toda vez
+# que mudo um input, a pagina volta pro topo e perco minha posicao".
+# Disponivel em Streamlit >= 1.37 (estamos em 1.45.1).
+_fragment_decorator = getattr(st, "fragment", None) or getattr(st, "experimental_fragment", None)
+
+
+def _render_cotacao_body() -> None:
+    """Corpo da tab — isolado em fragment para evitar rerun global."""
     st.markdown(_CSS, unsafe_allow_html=True)
 
     cat = st.radio(
@@ -1474,3 +1481,13 @@ def render_cotacao_tab() -> None:
         _render_suina()
     else:
         _render_graos()
+
+
+# Aplica @st.fragment se disponivel — senao cai no comportamento normal
+if _fragment_decorator is not None:
+    _render_cotacao_body = _fragment_decorator(_render_cotacao_body)
+
+
+def render_cotacao_tab() -> None:
+    """Chamado dentro de `with abas[1]:` no streamlit_app.py."""
+    _render_cotacao_body()
