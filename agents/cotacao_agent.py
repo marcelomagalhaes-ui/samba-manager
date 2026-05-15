@@ -689,7 +689,8 @@ _PI_TEMPLATE_LOCAL = Path(
     r"H:\Drives compartilhados\SAMBA EXPORT\MODELOS DE DOCUMENTOS"
     r"\_PRE LOI\2_PRICE_PREQUOTATION_SOY_SUGAR_CORN.docx"
 )
-_PI_TEMPLATES_FOLDER_ID = "1M9GsOrKTBvQxQRde1D1HraS4kVevlg3v"
+_PI_TEMPLATES_FOLDER_ID  = "1EU0KkSzHKhxqOlp3XGC-xvs6Xzvf_XTh"   # pasta _PRE LOI
+_PI_TEMPLATE_FILE_ID     = "1Om7bIHUPqcBF817kt3ypF8UJiYRgV2Kv"    # ID direto do .docx
 
 
 def process_price_indication(payload: dict) -> dict:
@@ -775,23 +776,46 @@ def process_price_indication(payload: dict) -> dict:
 # ── Helpers privados do PI ─────────────────────────────────────────────────────
 
 def _pi_load_template(template_name: str) -> Optional[bytes]:
-    """Tenta Drive; fallback no caminho local mapeado."""
-    if template_name:
-        try:
-            from services.google_drive import DriveManager
-            drive = DriveManager()
-            meta  = drive.find_file_by_name(
+    """
+    Carrega template PI em 3 tentativas:
+      1. Busca por nome na pasta Drive correta
+      2. Acesso direto pelo file ID (bypassa busca — robusto no Streamlit Cloud)
+      3. Fallback local (ambiente Windows com drive mapeado)
+    """
+    try:
+        from services.google_drive import DriveManager
+        drive = DriveManager()
+
+        # 1. Busca por nome na pasta
+        if template_name:
+            meta = drive.find_file_by_name(
                 template_name, _PI_TEMPLATES_FOLDER_ID,
                 ignore_underscore_prefix=True,
             )
             if meta:
                 b = drive.fetch_as_docx_bytes(meta)
                 if b:
-                    logger.info("Template PI carregado do Drive: %s", template_name)
+                    logger.info("Template PI carregado do Drive (busca): %s", template_name)
                     return b
-        except Exception as exc:
-            logger.warning("Drive indisponível para template PI: %s", exc)
 
+        # 2. ID direto (fallback quando busca falha no Cloud)
+        try:
+            file_meta = drive.service.files().get(
+                fileId=_PI_TEMPLATE_FILE_ID,
+                fields="id,name,mimeType",
+                supportsAllDrives=True,
+            ).execute()
+            b = drive.fetch_as_docx_bytes(file_meta)
+            if b:
+                logger.info("Template PI carregado do Drive (ID direto): %s", _PI_TEMPLATE_FILE_ID)
+                return b
+        except Exception as exc:
+            logger.warning("Template PI por ID falhou: %s", exc)
+
+    except Exception as exc:
+        logger.warning("Drive indisponível para template PI: %s", exc)
+
+    # 3. Fallback local
     if _PI_TEMPLATE_LOCAL.exists():
         logger.info("Template PI local: %s", _PI_TEMPLATE_LOCAL)
         return _PI_TEMPLATE_LOCAL.read_bytes()
