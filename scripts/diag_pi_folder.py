@@ -13,7 +13,7 @@ except Exception:
 from services.google_drive import DriveManager
 
 FOLDER_ID = "1EU0KkSzHKhxqOlp3XGC-xvs6Xzvf_XTh"   # _PRE LOI
-FILE_ID   = "1Om7bIHUPqcBF817kt3ypF8UJiYRgV2Kv"   # 2_PRICE_PREQUOTATION direto
+FILE_ID   = "1W57WR2h3Vi3jD-ZW4rY7iJjPA1H9IW2nBb8hpObQnD4"   # GDoc novo
 
 drive = DriveManager()
 if not drive.service:

@@ -690,7 +690,10 @@ _PI_TEMPLATE_LOCAL = Path(
     r"\_PRE LOI\2_PRICE_PREQUOTATION_SOY_SUGAR_CORN.docx"
 )
 _PI_TEMPLATES_FOLDER_ID  = "1EU0KkSzHKhxqOlp3XGC-xvs6Xzvf_XTh"   # pasta _PRE LOI
-_PI_TEMPLATE_FILE_ID     = "1Om7bIHUPqcBF817kt3ypF8UJiYRgV2Kv"    # ID direto do .docx
+# Google Doc do template (versao editavel mantida pelo usuario)
+_PI_TEMPLATE_FILE_ID     = "1W57WR2h3Vi3jD-ZW4rY7iJjPA1H9IW2nBb8hpObQnD4"
+# Fallback secundario: .docx original
+_PI_TEMPLATE_FILE_ID_DOCX = "1Om7bIHUPqcBF817kt3ypF8UJiYRgV2Kv"
 
 
 def process_price_indication(payload: dict) -> dict:
@@ -816,23 +819,27 @@ def _pi_load_template(template_name: str) -> Optional[bytes]:
                 _PI_LAST_LOAD_ERRORS.append(f"find_file_by_name erro: {exc}")
                 logger.warning("PI find_file_by_name falhou: %s", exc)
 
-        # 2. ID direto (fallback quando busca falha no Cloud)
+        # 2. ID direto — tenta primeiro o Google Doc, depois o .docx original
         if getattr(drive, "service", None):
-            try:
-                file_meta = drive.service.files().get(
-                    fileId=_PI_TEMPLATE_FILE_ID,
-                    fields="id,name,mimeType",
-                    supportsAllDrives=True,
-                ).execute()
-                b = drive.fetch_as_docx_bytes(file_meta)
-                if b:
-                    logger.info("Template PI carregado do Drive (ID direto): %s", _PI_TEMPLATE_FILE_ID)
-                    return b
-                else:
-                    _PI_LAST_LOAD_ERRORS.append(f"files().get(ID direto) OK mas fetch vazio")
-            except Exception as exc:
-                _PI_LAST_LOAD_ERRORS.append(f"files().get(ID direto) erro: {exc}")
-                logger.warning("Template PI por ID falhou: %s", exc)
+            for fid, label in [
+                (_PI_TEMPLATE_FILE_ID,      "GDoc"),
+                (_PI_TEMPLATE_FILE_ID_DOCX, "docx"),
+            ]:
+                try:
+                    file_meta = drive.service.files().get(
+                        fileId=fid,
+                        fields="id,name,mimeType",
+                        supportsAllDrives=True,
+                    ).execute()
+                    b = drive.fetch_as_docx_bytes(file_meta)
+                    if b:
+                        logger.info("Template PI carregado do Drive (ID %s): %s", label, fid)
+                        return b
+                    else:
+                        _PI_LAST_LOAD_ERRORS.append(f"files().get({label}={fid}) OK mas fetch vazio")
+                except Exception as exc:
+                    _PI_LAST_LOAD_ERRORS.append(f"files().get({label}={fid}) erro: {exc}")
+                    logger.warning("Template PI por ID %s falhou: %s", label, exc)
 
     except Exception as exc:
         _PI_LAST_LOAD_ERRORS.append(f"DriveManager() erro: {exc}")
