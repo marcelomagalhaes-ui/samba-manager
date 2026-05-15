@@ -799,27 +799,7 @@ def _pi_load_template(template_name: str) -> Optional[bytes]:
             _PI_LAST_LOAD_ERRORS.append("Drive service nao inicializado (token expirado no Streamlit Cloud?)")
             logger.warning("Drive service nao inicializado para template PI")
 
-        # 1. Busca por nome na pasta
-        if template_name and getattr(drive, "service", None):
-            try:
-                meta = drive.find_file_by_name(
-                    template_name, _PI_TEMPLATES_FOLDER_ID,
-                    ignore_underscore_prefix=True,
-                )
-                if meta:
-                    b = drive.fetch_as_docx_bytes(meta)
-                    if b:
-                        logger.info("Template PI carregado do Drive (busca): %s", template_name)
-                        return b
-                    else:
-                        _PI_LAST_LOAD_ERRORS.append(f"find_file_by_name OK mas fetch_as_docx_bytes retornou vazio")
-                else:
-                    _PI_LAST_LOAD_ERRORS.append(f"find_file_by_name nao achou '{template_name}' em {_PI_TEMPLATES_FOLDER_ID}")
-            except Exception as exc:
-                _PI_LAST_LOAD_ERRORS.append(f"find_file_by_name erro: {exc}")
-                logger.warning("PI find_file_by_name falhou: %s", exc)
-
-        # 2. ID direto — tenta primeiro o Google Doc, depois o .docx original
+        # 1. ID DIRETO DO GOOGLE DOC — caminho principal (mais rapido e robusto)
         if getattr(drive, "service", None):
             for fid, label in [
                 (_PI_TEMPLATE_FILE_ID,      "GDoc"),
@@ -840,6 +820,26 @@ def _pi_load_template(template_name: str) -> Optional[bytes]:
                 except Exception as exc:
                     _PI_LAST_LOAD_ERRORS.append(f"files().get({label}={fid}) erro: {exc}")
                     logger.warning("Template PI por ID %s falhou: %s", label, exc)
+
+        # 2. Busca por nome na pasta — ultimo recurso, apenas se IDs diretos falharam
+        if template_name and getattr(drive, "service", None):
+            try:
+                meta = drive.find_file_by_name(
+                    template_name, _PI_TEMPLATES_FOLDER_ID,
+                    ignore_underscore_prefix=True,
+                )
+                if meta:
+                    b = drive.fetch_as_docx_bytes(meta)
+                    if b:
+                        logger.info("Template PI carregado do Drive (busca): %s", template_name)
+                        return b
+                    else:
+                        _PI_LAST_LOAD_ERRORS.append(f"find_file_by_name OK mas fetch_as_docx_bytes retornou vazio")
+                else:
+                    _PI_LAST_LOAD_ERRORS.append(f"find_file_by_name nao achou '{template_name}'")
+            except Exception as exc:
+                _PI_LAST_LOAD_ERRORS.append(f"find_file_by_name erro: {exc}")
+                logger.warning("PI find_file_by_name falhou: %s", exc)
 
     except Exception as exc:
         _PI_LAST_LOAD_ERRORS.append(f"DriveManager() erro: {exc}")
