@@ -1249,47 +1249,49 @@ def _render_formal_quote_form(
                 unsafe_allow_html=True)
     _section("GERAR COTAÇÃO FORMAL", "📄")
 
-    # ── Campos do comprador ────────────────────────────────────────────────────
-    fb1, fb2 = st.columns(2)
-    buyer_name    = fb1.text_input(
-        "Empresa receptora", key=f"cot_buyer_name_{comm_type}",
-        placeholder="Ex.: Guangdong Foods Co., Ltd."
-    )
-    buyer_contact = fb2.text_input(
-        "Contato / Atenção", key=f"cot_buyer_contact_{comm_type}",
-        placeholder="Ex.: Mr. Zhang Wei"
-    )
-
-    fc1, fc2, fc3 = st.columns(3)
-    # Pré-preenche com o destino selecionado na simulação.
-    # A chave inclui o destino → quando o usuário muda o destino na simulação,
-    # o campo reseta automaticamente com o novo valor.
-    _dest_prefill = (extra or {}).get("destino", "China")
-    # Sanitiza para chave Streamlit — remove acentos e caracteres especiais
-    _dest_safe    = re.sub(r"[^a-zA-Z0-9_]", "_", _dest_prefill)
-    buyer_country = fc1.text_input(
-        "País destino",
-        value=_dest_prefill,
-        key=f"cot_buyer_country_{comm_type}_{_dest_safe}",
-        placeholder="China",
-    )
-    validity_days = fc2.number_input(
-        "Validade (dias)", 1, 90, 3,
-        key=f"cot_validity_{comm_type}",
-        help="Padrão Price Indication: 3 business days"
-    )
-    incoterm = fc3.selectbox(
-        "Incoterm", ["CIF", "FOB", "CFR", "DAP"],
-        key=f"cot_incoterm_{comm_type}"
-    )
-
     is_graos    = (comm_type == "USD_TON")
     _result_key = f"_pi_result_{comm_type}"   # persiste resultado no session_state
 
-    # ── Botão ─────────────────────────────────────────────────────────────────
-    if st.button("📄  Gerar Price Indication (PDF)" if is_graos else "📄  Gerar PDF de Cotação Formal",
-                 key=f"cot_gerar_btn_{comm_type}",
-                 use_container_width=True):
+    # ── Form (evita rerun a cada digitação) ────────────────────────────────────
+    _dest_prefill = (extra or {}).get("destino", "China")
+    _dest_safe    = re.sub(r"[^a-zA-Z0-9_]", "_", _dest_prefill)
+
+    with st.form(key=f"cot_form_{comm_type}_{_dest_safe}", clear_on_submit=False):
+        # ── Campos do comprador ────────────────────────────────────────────────
+        fb1, fb2 = st.columns(2)
+        buyer_name    = fb1.text_input(
+            "Empresa receptora", key=f"cot_buyer_name_{comm_type}",
+            placeholder="Ex.: Guangdong Foods Co., Ltd."
+        )
+        buyer_contact = fb2.text_input(
+            "Contato / Atenção", key=f"cot_buyer_contact_{comm_type}",
+            placeholder="Ex.: Mr. Zhang Wei"
+        )
+
+        fc1, fc2, fc3 = st.columns(3)
+        buyer_country = fc1.text_input(
+            "País destino",
+            value=_dest_prefill,
+            key=f"cot_buyer_country_{comm_type}_{_dest_safe}",
+            placeholder="China",
+        )
+        validity_days = fc2.number_input(
+            "Validade (dias)", 1, 90, 3,
+            key=f"cot_validity_{comm_type}",
+            help="Padrão Price Indication: 3 business days"
+        )
+        incoterm = fc3.selectbox(
+            "Incoterm", ["CIF", "FOB", "CFR", "DAP"],
+            key=f"cot_incoterm_{comm_type}"
+        )
+
+        # ── Botão submit (só dispara rerun ao clicar) ──────────────────────────
+        _submitted = st.form_submit_button(
+            "📄  Gerar Price Indication (PDF)" if is_graos else "📄  Gerar PDF de Cotação Formal",
+            use_container_width=True,
+        )
+
+    if _submitted:
 
         # Validação UX — não usa return para não sumir o warning num rerun
         if not buyer_name.strip():
