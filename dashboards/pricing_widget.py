@@ -1180,9 +1180,42 @@ def _render_cif(snap: dict, resultado: dict, porto_code: str,
 # ENTRY POINT
 # ─────────────────────────────────────────────────────────────────────────────
 
+# st.fragment isola reruns: mudar input dentro do fragment NAO reroda toda app.
+# Em Streamlit >= 1.37; fallback no-op para versoes antigas.
+_fragment_decorator = getattr(st, "fragment", None) or getattr(st, "experimental_fragment", None)
+
+
+def _wrap_fragment(fn):
+    return _fragment_decorator(fn) if _fragment_decorator is not None else fn
+
+
+@_wrap_fragment
+def _frag_quick_quote():
+    try:
+        from dashboards.quick_quote_chat import render_quick_quote
+        render_quick_quote()
+    except Exception as _e:
+        st.error(f"Quick Quote indisponivel: {_e}")
+
+
+@_wrap_fragment
+def _frag_calculadora():
+    _render_calculadora()
+
+
+@_wrap_fragment
+def _frag_cotacao():
+    try:
+        from dashboards.cotacao_widget import render_cotacao_tab
+        render_cotacao_tab()
+    except Exception as _e:
+        st.error(f"Modulo de Cotacao indisponivel: {_e}")
+
+
 def render_pricing_tab():
     """
-    Sub-abas do fluxo de formação de preço:
+    Sub-abas do fluxo de formação de preço (cada uma isolada em st.fragment
+    para que mudancas internas nao re-rodem a app inteira):
       1. Cotacao Rapida  — chat conversacional, resposta imediata
       2. Calculadora     — form completo com todos os parâmetros
       3. Cotação / PDF   — gerador de proposta formal (cotacao_widget)
@@ -1194,21 +1227,13 @@ def render_pricing_tab():
     ])
 
     with tab_qq:
-        try:
-            from dashboards.quick_quote_chat import render_quick_quote
-            render_quick_quote()
-        except Exception as _e:
-            st.error(f"Quick Quote indisponivel: {_e}")
+        _frag_quick_quote()
 
     with tab_calc:
-        _render_calculadora()
+        _frag_calculadora()
 
     with tab_cot:
-        try:
-            from dashboards.cotacao_widget import render_cotacao_tab
-            render_cotacao_tab()
-        except Exception as _e:
-            st.error(f"Modulo de Cotacao indisponivel: {_e}")
+        _frag_cotacao()
 
 
 def _render_calculadora():
