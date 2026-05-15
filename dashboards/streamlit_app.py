@@ -64,10 +64,21 @@ except Exception:
     PhysicalMarketScraper = None
 
 # Garante que o banco existe (necessário no Streamlit Cloud onde o SQLite começa vazio)
+# create_tables faz introspecao + DDL — round-trip caro ao Supabase em toda rerun.
+# Cacheamos como resource: roda UMA vez por instancia da app, nao por rerun.
+@st.cache_resource(show_spinner=False)
+def _ensure_tables_once(url: str) -> bool:
+    try:
+        Path("data").mkdir(exist_ok=True)
+        create_tables(url)
+        return True
+    except Exception:
+        return False
+
+
 try:
     _db_url = os.getenv("DATABASE_URL", "sqlite:///data/samba_control.db")
-    Path("data").mkdir(exist_ok=True)
-    create_tables(_db_url)
+    _ensure_tables_once(_db_url)
 except Exception:
     pass
 
@@ -1285,15 +1296,23 @@ section[data-testid="stSidebar"] div[data-testid="stIFrame"] {
 """, unsafe_allow_html=True)
 
 # ========================
-# ENGINE
+# ENGINE (singleton via cache_resource)
 # ========================
+# Sem cache_resource a engine eh recriada a cada rerun, abrindo pool novo.
+# Com cache_resource o engine eh criado UMA vez e reusado em todos os reruns,
+# economizando milissegundos e respeitando o pool_size=3 do Supabase.
+@st.cache_resource(show_spinner=False)
+def _get_engine_cached(url: str | None):
+    return get_engine(url)
+
+
 _db_url = os.getenv("DATABASE_URL")
 if not _db_url:
     try:
         _db_url = st.secrets.get("DATABASE_URL")
     except Exception:
         pass
-engine = get_engine(_db_url)  # get_engine(None) usa st.secrets internamente como fallback
+engine = _get_engine_cached(_db_url)
 
 
 # ========================
